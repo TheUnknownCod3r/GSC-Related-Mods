@@ -125,7 +125,7 @@ constructString(string)
 
 iPrintLnAlt(String)
 {
-	if(!isDefined(self.iPrintLnAlt)) { self.iPrintLnAlt = self createText("objective", 1, "center", "top",-240, 225, 3, 1, String, (1, 1, 1));}
+	if(!isDefined(self.iPrintLnAlt)) { self.iPrintLnAlt = self createText("objective", 1, "center", "top",-380, 285, 3, 1, String, (1, 1, 1));}
 	else { self.iPrintLnAlt set_text(String); self.iPrintLnAlt.alpha = 1; }
 	self.iPrintLnAlt thread hudfade(0,4);
 }  
@@ -677,13 +677,13 @@ MoveMenu()
     
     MenuVisTemp = [];
     
-    MenuVisTemp["BG"] = self createRectangle("LEFT", "TOP", 0, 90, 170, int(8*15) + 45, (0,0,0), "white", 0, .6, true);
-    MenuVisTemp["TITLE"] = self createText("default", 1.5, "CENTER", "TOP", -340, 95, 0, 1, "Menu Reposition", (1, 1, 1), true);
-    MenuVisTemp["INFO0"] = self createText("default", 1.2, "CENTER", "CENTER", -340, 120, 0, 1, "Movement Controls", (1, 1, 1), true);
-    MenuVisTemp["INFO1"] = self createText("default", 1, "CENTER", "CENTER", -340, -40, 0, 1, "UP - [{+attack}] DOWN - [{+speed_throw}]", (1, 1, 1), true);
-    MenuVisTemp["INFO2"] = self createText("default", 1, "CENTER", "CENTER", -340, -30, 0, 1, "LEFT - [{+actionslot 4}] RIGHT - [{+actionslot 3}]", (1, 1, 1), true);
-    MenuVisTemp["INFO3"] = self createText("default", 1, "CENTER", "CENTER", -340, 0, 0, 1, "CONFIRM PLACEMENT - [{+activate}]", (1, 1, 1), true);
-    MenuVisTemp["INFO4"] = self createText("default", 1, "CENTER", "CENTER", -340, 10, 0, 1, "DISCARD CHANGES - [{+melee}]", (1, 1, 1), true);
+    MenuVisTemp["BG"] = self createRectangle("LEFT", "TOP", 0, 90, 170, int(7*15) + 45, (0,0,0), "white", 0, .6, true);
+    MenuVisTemp["TITLE"] = self createText("objective", 1.5, "CENTER", "TOP", -340, 95, 0, 1, "Menu Reposition", (1, 1, 1), true);
+    MenuVisTemp["INFO0"] = self createText("objective", 1.2, "CENTER", "TOP", -340, 120, 0, 1, "Movement Controls", (1, 1, 1), true);
+    MenuVisTemp["INFO1"] = self createText("objective", 1, "CENTER", "TOP", -340, 140, 0, 1, "UP - [{+attack}] DOWN - [{+speed_throw}]", (1, 1, 1), true);
+    MenuVisTemp["INFO2"] = self createText("objective", 1, "CENTER", "TOP", -340, 160, 0, 1, "LEFT - [{+actionslot 4}] RIGHT - [{+actionslot 3}]", (1, 1, 1), true);
+    MenuVisTemp["INFO3"] = self createText("objective", 1, "CENTER", "TOP", -340, 180, 0, 1, "CONFIRM PLACEMENT - [{+activate}]", (1, 1, 1), true);
+    MenuVisTemp["INFO4"] = self createText("objective", 1, "CENTER", "TOP", -340, 200, 0, 1, "DISCARD CHANGES - [{+melee}]", (1, 1, 1), true);
     
     X = self.menuSetting["MenuX"];
     Y = self.menuSetting["MenuY"];
@@ -1641,7 +1641,7 @@ Godmode() {
 	executeCommand("god");
 	wait .01;
 	if(self.Godmode) {
-		self iPrintln("God Mode [^2ON^7]");
+		self iPrintLnAlt("God Mode [^2ON^7]");
 	} else {
 		self iPrintlnAlt("God Mode [^1OFF^7]");
 	}
@@ -1666,10 +1666,10 @@ GetTehMap2(mapName)
 ToggleAmmo() {
 	self.UnlimAmmo = !return_toggle(self.UnlimAmmo);
 	if(self.UnlimAmmo) {
-		self iPrintln("Infinite Ammo [^2ON^7]");
+		self iPrintLnAlt("Infinite Ammo [^2ON^7]");
 		scripts\cp\utility::enable_infinite_ammo(self.UnlimAmmo);
 	} else {
-		self iPrintln("Infinite Ammo [^1OFF^7]");
+		self iPrintLnAlt("Infinite Ammo [^1OFF^7]");
 		scripts\cp\utility::enable_infinite_ammo(self.UnlimAmmo);
 		self notify("stop_infinite_ammo");
 	}
@@ -1691,7 +1691,7 @@ ThirdPersonToggle() {
 		setdvar("camera_thirdPerson", 1);
 		scripts\cp\utility::setThirdPersonDOF(1);
 	} else {
-		self iPrintln("Third Person [^1OFF^7]");
+		self iPrintLnAlt("Third Person [^1OFF^7]");
 		setdvar("camera_thirdPerson", 0);
 		scripts\cp\utility::setThirdPersonDOF(0);
 	}
@@ -1799,7 +1799,7 @@ take_weapon(weapon_name) {
 GiveTickets(Amount)
 {
 	scripts\cp\zombies\arcade_game_utility::give_player_tickets(self, Amount);
-	self iPrintLnBold("Awarded ^1"+amount+" Tickets");
+	self iPrintLnAlt("Awarded ^1"+amount+" Tickets");
 }
 
 CompleteGnS()
@@ -1828,7 +1828,7 @@ clear_outline_for_all_players(param_00)
 
 EndGameHost()
 {
-    foreach(client in level.players) client iPrintLnBold("^2Sorry, "+level.hostname+" Ended The Game");
+    foreach(client in level.players) client iPrintLnAlt("^2Sorry, "+level.hostname+" Ended The Game");
 	level thread [[ level.endgame ]]("axis",level.end_game_string_index["kia"]);
 }
 
@@ -1873,13 +1873,13 @@ OpenAllDoors()
 
 S(message)
 {
-	self iPrintLnBold(message);//iPrintLnBold handler for ease
+	self iPrintLnAlt(message);//iPrintLnBold handler for ease
 }
 
 
 ChangeMapFixed(MapName)
 {
-self iprintlnbold("^5Map Name Being Changed To ^2"+GetTehMap2(MapName)+"!");
+self iPrintLnAlt("^5Map Name Being Changed To ^2"+GetTehMap2(MapName)+"!");
 wait 0.50;
 setDvar("ls_mapname", MapName);
 setDvar("mapname", MapName);
@@ -1896,7 +1896,7 @@ MaxBank()
 {
 	level.atm_amount_deposited = 2147483647;
 	self scripts\cp\cp_vo::try_to_play_vo("atm_deposit","zmb_comment_vo","low",10,0,0,1,40);
-	self iPrintLnBold("The Bank is ^2BURSTING! ^0Balance Set to: ^2$2147483647");
+	self iPrintLnAlt("The Bank is ^2BURSTING! ^0Balance Set to: ^2$2147483647");
 }
 
 //////////////////////////////////////////////////////////////IW7 Script, Taken from cp_zmb.gsc
@@ -1924,7 +1924,7 @@ killAllZombies()
         for(i = 0; i < zombies.size; i++)
             zombies[i] DoDamage(zombies[i].health + 1, zombies[i].origin);
     }
-	self iPrintLnBold("All Zombies ^2Killed");
+	self iPrintLnAlt("All Zombies ^2Killed");
 }
 
 PlayAudioToClients(audioFile)
@@ -2354,7 +2354,7 @@ PrintMenuControls()
     {
         for(i=0;i<5;i++)
         {
-            self S(info[i]);
+            self iPrintLnAlt(info[i]);
             wait 5;
         }
         wait .2;
@@ -2523,7 +2523,7 @@ ToggleDvar(dvar)
 SuperJump()
 {
     level.jumpHeight = !bool(level.jumpHeight);
-    self iPrintLnBold("Super Jump " + (level.jumpHeight ? "^2ON" : "^1OFF") );
+    self iPrintLnAlt("Super Jump " + (level.jumpHeight ? "^2ON" : "^1OFF") );
 
     if(level.jumpHeight)
         foreach(player in level.players)
@@ -2549,7 +2549,7 @@ AllSuperJump()
 
 EditRound(newRoundNum)
 {
-	self iPrintLn("Round Changing to: "+newRoundNum+" in TWO SECONDS!");
+	self iPrintLnAlt("Round Changing to: "+newRoundNum+" in TWO SECONDS!");
 	wait 2;
 	level.wave_num = newRoundNum;
 	thread killAllZombies();
@@ -2582,9 +2582,9 @@ FreeSoulKeys() {
 	self setPlayerData("cp", "haveSoulKeys", "soul_key_3", 1);
 	self setPlayerData("cp", "haveSoulKeys", "soul_key_4", 1);
 	self setPlayerData("cp", "haveSoulKeys", "soul_key_5", 1);
-	self iPrintlnBold("All Soul Keys ^2Awarded");
+	self iPrintLnAlt("All Soul Keys ^2Awarded");
 	wait 2;
-	self iPrintlnBold("Go to ^3Pack a Punch^7 and Interact with the Soul Jar to ^2PERMANENTLY^7 unlock");
+	self iPrintLnAlt("Go to ^3Pack a Punch^7 and Interact with the Soul Jar to ^2PERMANENTLY^7 unlock");
 }
 
 AwardTalisman() {
@@ -2604,5 +2604,5 @@ AwardTalisman() {
 	self setPlayerData("cp", "haveItems", "item_3", 1);
 	self setPlayerData("cp", "haveItems", "item_4", 1);
 	self setPlayerData("cp", "haveItems", "item_5", 1);
-	self iPrintlnBold("Talismans Unlocked");
+	self iPrintLnAlt("Talismans Unlocked");
 }
