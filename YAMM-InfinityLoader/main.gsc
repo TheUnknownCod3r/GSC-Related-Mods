@@ -1353,10 +1353,11 @@ menuOptions()
             break;
         case "Zombies in Spaceland":
             self addMenu("Zombies in Spaceland", "Zombies in Spaceland");
-                self addSlider("Give Tickets", 5,0,950,5, ::tickets);
+                self addSlider("Give Tickets", 50,50,950, 50, ::GiveTickets);
                 self addOpt("Trigger MW1 Song", ::PlayAudioToClients, "mus_pa_mw1_80s_cover");
                 self addOpt("Trigger MW2 Song", ::PlayAudioToClients, "mus_pa_mw2_80s_cover");
                 self addOpt("Grab SetiCom Parts", ::GrabSetiComParts);
+                self addOpt("Take the Seticom", ::GrabTheSeticom);
                 self addOpt("Activate Ghosts N Skulls", ::CompleteGnS);
             break;
         case "Rave in the Redwoods":
@@ -1581,13 +1582,11 @@ teleportZombiesToMe()
     }
 }
 
-tickets(amount)
+GiveTickets(Amount)
 {
-    self playlocalsound("zmb_ui_earn_tickets");
-    self.num_tickets += amount;
-        
-    self setclientomnvar("zombie_number_of_ticket", int(self.num_tickets));
-}
+    self scripts\cp\zombies\arcade_game_utility::func_8317(self, Amount);
+    self iPrintLnAlt("Awarded ^1"+amount+" Tickets");
+}   
 
 OpenAllDoors()
 {
@@ -1599,8 +1598,9 @@ OpenAllDoors()
             var_05.activated = 1;
             var_05.var_13068 = 1;
             if(isDefined(var_05.var_C626)) {
-            var_05.var_C626 = 0;
+                var_05.var_C626 = 0;
             }
+            if(level.script == "cp_zmb"){ flag_set("pap_portal_used");}
         }
     }
 }
@@ -1981,6 +1981,15 @@ GrabSetiComParts(){
     self pick_up_djquest_part("dj_quest_part_1","zmb_frequency_device_radio");
     self pick_up_djquest_part("dj_quest_part_2","zmb_frequency_device_calculator");
     self pick_up_djquest_part("dj_quest_part_3","zmb_frequency_device_umbrella_ground");
+}
+
+GrabTheSeticom()
+{
+    flag_set("dj_request_defense_done");
+    foreach(player in level.players)
+    {
+        player setclientomnvar("zm_special_item",3);
+    }
 }
 pick_up_djquest_part(tagName,quest_part)
 {
