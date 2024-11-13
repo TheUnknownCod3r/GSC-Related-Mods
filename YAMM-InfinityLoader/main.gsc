@@ -1,7 +1,7 @@
 /*
 *    Infinity Loader :: The Best GSC IDE!
 *
-*    Project : YetAnotherModMenu
+*    Project : test3
 *    Author : 
 *    Game : Call of Duty: Infinite Warfare
 *    Description : Starts Zombies code execution!
@@ -9,16 +9,9 @@
 *
 */
 
-#include common_scripts\utility;
 #include scripts\cp\zombies\direct_boss_fight;
+#include scripts\cp\zombies\zombie_jukebox;
 //Preprocessor definition chaining
-#define WELCOME_MSG = BASE_MSG + GREEN + PROJECT_TITLE;
-
-//Preprocessor global definitions
-#define RED = "^1";
-#define GREEN = "^2";
-#define BASE_MSG = "Infinity Loader | Project: ";
-#define PROJECT_TITLE = "YetAnotherModMenu";
 
 //Preprocessor directives
 #ifdef RELEASE
@@ -58,7 +51,6 @@ onPlayerSpawned()
 
         self freezeControls(false);
         
-        // Will appear each time when the player spawns, that's just an example.
         if(self isHost())
         {
             self thread InitializeMenu();
@@ -68,7 +60,6 @@ onPlayerSpawned()
             
         }
         else{ self.access = 0;}
-        //Your code goes here...Good Luck!
     }
 }
 
@@ -115,7 +106,7 @@ InitializeMenu()
 
 iPrintLnAlt(String)
 {
-    if(!isDefined(self.iPrintLnAlt)) { self.iPrintLnAlt = self createText("objective", 1, "center", "top",-380, 285, 3, 1, String, (1, 1, 1));}
+    if(!isDefined(self.iPrintLnAlt)) { self.iPrintLnAlt = self createText("objective", 1, "center", "top",-350, 285, 3, 1, String, (1, 1, 1));}
     else { self.iPrintLnAlt setText(String); }
     self.iPrintLnAlt.alpha = 1;
     self.iPrintLnAlt thread hudfade(0,4);
@@ -1350,6 +1341,10 @@ menuOptions()
             self addMenu("Lobby Manipulation", "Lobby Manipulation");
                 self addOpt("Max Bank Amount", ::MaxBank);
                 self addOpt("Kill All Zombies", ::killAllZombies);
+                if(level.script != "cp_town" || level.script != "cp_final")
+                {
+                    self addOpt("Open All Doors", ::OpenAllDoors);
+                }
                 
             break;
             
@@ -1359,9 +1354,13 @@ menuOptions()
         case "Zombies in Spaceland":
             self addMenu("Zombies in Spaceland", "Zombies in Spaceland");
                 self addSlider("Give Tickets", 5,0,950,5, ::tickets);
+                self addOpt("Trigger MW1 Song", ::PlayAudioToClients, "mus_pa_mw1_80s_cover");
+                self addOpt("Trigger MW2 Song", ::PlayAudioToClients, "mus_pa_mw2_80s_cover");
+                self addOpt("Grab SetiCom Parts", ::GrabSetiComParts);
             break;
         case "Rave in the Redwoods":
             self addMenu("Rave in the Redwoods", "Rave in the Redwoods");
+            self addOpt("Play Puppet Strings", ::PlayAudioToClients, "mus_pa_rave_hidden_track");
             break;
         case "Shaolin Shuffle":
             self addMenu("Shaolin Shuffle", "Shaolin Shuffle");
@@ -1380,7 +1379,7 @@ menuOptions()
             break; 
         case "Host Debug":
             self addMenu("Host Debug", "Host Debug Settings");
-            self addOpt("Fast Restart", ::test);
+            self addOpt("Fast Restart", ::FastRestartGame);
             self addOpt("End The Game", ::EndGameHost);
             break;
         default:
@@ -1471,8 +1470,7 @@ test()
 
 MaxBank()
 {
-    level.atm_amount_deposited     = 2147483647;
-    level.atm_total_deposit_amount = 2147483647;
+    level.var_2416 = 2147483647;
     self iPrintLnAlt("The Bank is ^2BURSTING! ^0Balance Set to: ^2$2147483647");
 }
 
@@ -1516,7 +1514,7 @@ killAllZombies()
     {
         foreach( zom in returnZombieTeam() )
         {
-            zom dodamage(zom.health + 999, zom.origin, self, self, "MOD_EXPLOSIVE", "iw7_walkietalkie_zm");
+            zom doDamage(zom.health + 999, zom.origin, self, self, "MOD_EXPLOSIVE", "iw7_walkietalkie_zm");
         }
     }
     self iPrintLnAlt("All Zombies Eliminated");
@@ -1581,4 +1579,422 @@ tickets(amount)
     self.num_tickets += amount;
         
     self setclientomnvar("zombie_number_of_ticket", int(self.num_tickets));
+}
+
+OpenAllDoors()
+{
+    self scripts\cp\zombies\direct_boss_fight::func_C617();
+    if(isdefined(level.fast_travel_spots))
+    {
+        foreach(var_05 in level.fast_travel_spots)
+        {
+            var_05.activated = 1;
+            var_05.var_13068 = 1;
+            if(isDefined(var_05.var_C626)) {
+            var_05.var_C626 = 0;
+            }
+        }
+    }
+}
+
+PlayAudioToClients(audioFile)
+{
+    foreach(player in level.players)
+    {
+        thread force_song((649,683,254),audioFile);
+    }
+}
+
+force_song(param_00,param_01,param_02,param_03,param_04,param_05,param_06)
+{
+    level endon("game_ended");
+    level endon("add_hidden_song_to_playlist");
+    level endon("add_hidden_song_2_to_playlist");
+    level notify("force_new_song");
+    level endon("force_new_song");
+    if(isdefined(param_05))
+    {
+        level.var_72AB[param_05] = param_05;
+    }
+
+    var_07 = spawnstruct();
+    var_07.var_10406 = param_01;
+    var_07.var_5747 = "";
+    var_07.var_5748 = "";
+    var_07.var_5745 = "";
+    var_07.var_7783 = "music";
+    level.var_A4BD[level.var_A4BD.size] = var_07;
+    play_sound_in_space("zmb_jukebox_on",param_00);
+
+    var_08 = spawn("script_origin",param_00);
+    var_08 playloopsound(param_01);
+    level.var_4B67 = param_01;
+    var_08 thread earlyendon(var_08);
+    var_09 = lookupsoundlength(param_01) / 1000;
+    waittill_any_timeout_1(var_09,"skip_song");
+    var_08 stoploopsound();
+    if(istrue(param_06))
+    {
+        parse_music_genre_table();
+    }
+
+    level thread scripts\cp\zombies\zombie_jukebox::func_A4BE((649,683,254),1);
+}
+func_CE2C(param_00,param_01,param_02,param_03,param_04)
+{
+    var_05 = spawn("script_origin",(0,0,1));
+    if(!isdefined(param_01))
+    {
+        param_01 = self.origin;
+    }
+
+    var_05.origin = param_01;
+    var_05.angles = param_02;
+    if(isdefined(param_04))
+    {
+        var_05 linkto(param_04);
+    }
+    if(isdefined(param_03) && param_03)
+    {
+        var_05 playsoundasmaster(param_00);
+    }
+    else
+    {
+        var_05 playsound(param_00);
+    }
+
+    var_05 delete();
+}
+
+//Function Number: 152
+play_sound_in_space(param_00,param_01,param_02,param_03)
+{
+    func_CE2C(param_00,param_01,(0,0,0),param_02,param_03);
+}
+waittill_any_timeout_1(param_00,param_01,param_02,param_03,param_04,param_05,param_06)
+{
+    self endon("death");
+
+    var_07 = spawnstruct();
+    if(isdefined(param_01))
+    {
+        thread func_13806(param_01,var_07);
+    }
+
+    var_07 thread func_1428(param_00);
+    var_07 waittill("returned",var_08);
+    var_07 notify("die");
+    return var_08;
+}
+
+func_13806(param_00,param_01)
+{
+    if(param_00 != "death")
+    {
+        self endon("death");
+    }
+
+    param_01 endon("die");
+    self waittill(param_00);
+    param_01 notify("returned",param_00);
+}
+
+func_1428(param_00)
+{
+    self endon("die");
+    wait(param_00);
+    self notify("returned","timeout");
+}
+
+istrue(param_00)
+{
+    if(isdefined(param_00) && param_00)
+    {
+        return 1;
+    }
+
+    return 0;
+}
+flag_init(param_00)
+{
+    if(!isdefined(level.flag))
+    {
+        func_95E2();
+    }
+
+    level.flag[param_00] = 0;
+    func_978C();
+    if(!isdefined(level.var_12745[param_00]))
+    {
+        level.var_12745[param_00] = [];
+    }
+
+    if(getsubstr(param_00,0,3) == "aa_")
+    {
+        thread [[ level.var_74C2["sp_stat_tracking_func"] ]](param_00);
+    }
+}
+flag_set(param_00,param_01)
+{
+    level.flag[param_00] = 1;
+    if(isdefined(param_01))
+    {
+        level notify(param_00,param_01);
+        return;
+    }
+
+    level notify(param_00);
+}
+func_95E2()
+{
+    level.flag = [];
+    level.var_6E6E = [];
+    level.var_7763 = 0;
+    func_95C6("sp_stat_tracking_func");
+    level.var_6E46 = spawnstruct();
+    level.var_6E46 func_23D9();
+}
+func_23D9()
+{
+    self.var_12BA3 = "generic" + level.var_7763;
+    level.var_7763++;
+}
+
+func_16DC(param_00,param_01)
+{
+    if(!isdefined(level.var_74C2))
+    {
+        level.var_74C2 = [];
+    }
+
+    level.var_74C2[param_00] = param_01;
+}
+
+//Function Number: 187
+func_95C6(param_00)
+{
+    if(!isdefined(level.var_74C2))
+    {
+        level.var_74C2 = [];
+    }
+
+    if(!isdefined(level.var_74C2[param_00]))
+    {
+        func_16DC(param_00,::func_61B9);
+    }
+}
+func_61B9(param_00)
+{
+}
+func_978C()
+{
+
+    level.var_12745 = [];
+    level.var_12749[1] = ::trigger_onOverride;
+    level.var_12749[0] = ::trigger_offOverride;
+}
+//Function Number: 45
+trigger_onOverride(param_00,param_01)
+{
+    if(isdefined(param_00) && isdefined(param_01))
+    {
+        var_02 = getentarray(param_00,param_01);
+        return;
+    }
+
+    func_1277B();
+}
+//Function Number: 46
+func_1277B()
+{
+    if(isdefined(self.var_DD8D))
+    {
+        self.origin = self.var_DD8D;
+    }
+
+    self.trigger_off = undefined;
+}
+
+//Function Number: 47
+trigger_offOverride(param_00,param_01)
+{
+    if(isdefined(param_00) && isdefined(param_01))
+    {
+        var_02 = getentarray(param_00,param_01);
+        return;
+    }
+
+    func_12779();
+}
+earlyendon(param_00)
+{
+    level endon("game_ended");
+    level waittill_any_3("add_hidden_song_to_playlist","add_hidden_song_2_to_playlist","force_new_song");
+    param_00 stoploopsound();
+    wait(2);
+    if(isdefined(param_00))
+    {
+        param_00 delete();
+    }
+}
+//Function Number: 48
+func_12779()
+{
+    if(!isdefined(self.var_DD8D))
+    {
+        self.var_DD8D = self.origin;
+    }
+
+    if(self.origin == self.var_DD8D)
+    {
+        self.origin = self.origin + (0,0,-10000);
+    }
+
+    self.trigger_off = 1;
+    self notify("trigger_off");
+}
+waittill_any_3(param_00,param_01,param_02,param_03,param_04,param_05,param_06,param_07)
+{
+    if(isdefined(param_01))
+    {
+        self endon(param_01);
+    }
+
+    if(isdefined(param_02))
+    {
+        self endon(param_02);
+    }
+
+    if(isdefined(param_03))
+    {
+        self endon(param_03);
+    }
+
+    if(isdefined(param_04))
+    {
+        self endon(param_04);
+    }
+
+    if(isdefined(param_05))
+    {
+        self endon(param_05);
+    }
+
+    if(isdefined(param_06))
+    {
+        self endon(param_06);
+    }
+
+    if(isdefined(param_07))
+    {
+        self endon(param_07);
+    }
+
+    self waittill(param_00);
+}
+parse_music_genre_table()
+{
+    flag_init("jukebox_paused");
+    level.var_A4BD = [];
+    level.var_72AB = [];
+    level.var_689D = ["mus_pa_sp_knightrider","mus_pa_mw1_80s_cover","mus_pa_mw2_80s_cover"];
+    level.var_10405 = 0;
+    level.var_BF50 = 0;
+    level.songs_played = 0;
+    if(isdefined(level.var_A4BF))
+    {
+        var_00 = level.var_A4BF;
+    }
+    else
+    {
+        var_00 = "cp/zombies/cp_zmb_music_genre.csv";
+    }
+
+    var_01 = 0;
+    for(;;)
+    {
+        var_02 = tablelookupbyrow(var_00,var_01,1);
+        if(var_02 == "")
+        {
+            break;
+        }
+
+        if(func_2286(level.var_689D,var_02))
+        {
+            var_01++;
+            continue;
+        }
+
+        var_03 = tablelookupbyrow(var_00,var_01,2);
+        var_04 = tablelookupbyrow(var_00,var_01,3);
+        var_05 = tablelookupbyrow(var_00,var_01,4);
+        var_06 = tablelookupbyrow(var_00,var_01,5);
+        var_07 = spawnstruct();
+        var_07.var_10406 = var_02;
+        var_07.var_5747 = var_04;
+        var_07.var_5748 = var_05;
+        var_07.var_5745 = var_06;
+        var_07.var_7783 = var_03;
+        level.var_A4BD[level.var_A4BD.size] = var_07;
+        var_01++;
+    }
+}
+
+func_2286(param_00,param_01)
+{
+    if(param_00.size <= 0)
+    {
+        return 0;
+    }
+
+    foreach(var_03 in param_00)
+    {
+        if(var_03 == param_01)
+        {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+set_quest_icon(param_00)
+{
+    func_93F5();
+    func_F560(param_00);
+}
+func_F560(param_00)
+{
+    setomnvarbit("zombie_quest_piece",param_00,1);
+    setclientmatchdata("questPieces","quest_piece_" + param_00,1);
+}
+func_93F5()
+{
+    if(!isdefined(level.num_of_quest_pieces_completed))
+    {
+        level.num_of_quest_pieces_completed = 0;
+    }
+
+    level.num_of_quest_pieces_completed++;
+}
+GrabSetiComParts(){
+    self pick_up_djquest_part("dj_quest_part_1","zmb_frequency_device_radio");
+    self pick_up_djquest_part("dj_quest_part_2","zmb_frequency_device_calculator");
+    self pick_up_djquest_part("dj_quest_part_3","zmb_frequency_device_umbrella_ground");
+}
+pick_up_djquest_part(tagName,quest_part)
+{
+    if(level.var_5738 == true && level.var_5739 == true && level.var_573A == true)
+    {
+        flag_set("dj_fetch_quest_completed");
+    }
+    var1 = 0;
+    if(tagName == "dj_quest_part_3") var1 = 24;
+    else if(tagName == "dj_quest_part_2") var1 = 23; 
+    else if(tagName == "dj_quest_part_1") var1 = 22; 
+
+    playfx(level._effect["souvenir_pickup"],tagName.part_model.origin);
+    quest_part playlocalsound("part_pickup");
+    thread scripts\cp\zombies\zombie_analytics::func_AF6F(level.wave_num,tagName.groupname,tagName.part_model.model);
+    tagName.part_model delete();
+    level set_quest_icon(var1);
 }
