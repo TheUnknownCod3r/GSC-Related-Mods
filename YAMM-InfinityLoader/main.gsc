@@ -1357,6 +1357,7 @@ menuOptions()
                 self addOpt("Trigger MW1 Song", ::PlayAudioToClients, "mus_pa_mw1_80s_cover");
                 self addOpt("Trigger MW2 Song", ::PlayAudioToClients, "mus_pa_mw2_80s_cover");
                 self addOpt("Grab SetiCom Parts", ::GrabSetiComParts);
+                self addOpt("Activate Ghosts N Skulls", ::CompleteGnS);
             break;
         case "Rave in the Redwoods":
             self addMenu("Rave in the Redwoods", "Rave in the Redwoods");
@@ -1467,6 +1468,13 @@ test()
     
     self iPrintLnAlt("Testing");
 }
+
+CompleteGnS()
+{
+    scripts\cp\maps\cp_zmb\cp_zmb_ghost_wave::func_C127(5);
+    self lib_0D59::use_activate_gns_machine("activate_gns_machine");
+}
+
 
 MaxBank()
 {
@@ -1826,6 +1834,7 @@ trigger_offOverride(param_00,param_01)
 
     func_12779();
 }
+
 earlyendon(param_00)
 {
     level endon("game_ended");
