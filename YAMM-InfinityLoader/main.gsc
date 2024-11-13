@@ -26,7 +26,9 @@
 
 init()
 {
+    level thread InitializeMenu();
     level thread onPlayerConnect();
+    level.mapName = level.script;
 }
 
 onPlayerConnect()
@@ -34,6 +36,7 @@ onPlayerConnect()
     for(;;)
     {
         level waittill("connected", player);
+        setDvar("sv_cheats", 1);
         player thread onPlayerSpawned();
     }
 }
@@ -48,21 +51,36 @@ onPlayerSpawned()
         if(isDefined(self.playerSpawned))
             continue;
         self.playerSpawned = true;
-
-        self freezeControls(false);
+        if(!isDefined(level.initial_setup)) {
+            level.initial_setup = true;
+        }
         
+        self thread on_event();
+        self thread on_ended();
+        level thread RainbowColor();
+    }
+}
+on_event() {
+    self endOn("disconnect");
+    while (true) {
         if(self isHost())
         {
-            self thread InitializeMenu();
             self freezeControls(false);
             self thread initializeSetup(5, self);
             self thread welcomeMessage("^4Welcome ^2"+self.name+" ^7to ^5"+level.patchName, "^4Your Access Level: ^2"+GetAccessName(self.access)+"^7, ^1Created by: ^5"+level.creatorName);
             
         }
-        else{ self.access = 0;}
+        else { self.access = 0;}
+        break;
     }
 }
 
+on_ended() {
+    level waitTill("game_ended");
+    
+    level notify("on_close_ended");
+    level endOn("on_close_ended");
+}
 InitializeMenu()
 {
     level.Status           = ["^1Unverified", "^3Verified", "^4VIP", "^6Admin", "^5Co-Host", "^2Host"];
@@ -133,35 +151,6 @@ createText(font, fontScale, align, relative, x, y, sort, alpha, text, color, mov
     textElem.alignY = relative;
     textElem.horzAlign = align;
     textElem.vertAlign = relative;
-    //textElem scripts\cp\utility::setpoint(align, relative, x, y);//Doesn't seem to work? Sadge
-    if(color != "rainbow")
-        textElem.color = color;
-    else
-        textElem.color = level.rainbowColour;
-    textElem.text = text;
-    textElem setText(text);
-    return textElem;
-}
-
-createTextWelcome(font, fontScale, align, relative, x, y, sort, alpha, text, color, movescale, isLevel)
-{  
-    textElem = (isDefined(isLevel) ? newClientHudElem(self) : newHudElem());
-    textElem.font = font;
-    textElem.fontscale = fontScale;
-    textElem.alpha = alpha;
-    textElem.sort = sort;
-    textElem.foreground = true;
-    textElem.hideWhenInMenu = (self.menuSetting["MenuStealth"] ? true : false);
-    textElem.archived = (self.menuSetting["MenuStealth"] ? false : true);
-    if(IsDefined(movescale))
-        x += self.menuSetting["MenuX"];
-        
-    if(IsDefined(movescale))
-        y += self.menuSetting["MenuY"];
-    textElem.x = x;
-    textElem.y = y;
-    textElem.alignX = x;
-    textElem.alignY = y;
     //textElem scripts\cp\utility::setpoint(align, relative, x, y);//Doesn't seem to work? Sadge
     if(color != "rainbow")
         textElem.color = color;
@@ -1293,8 +1282,9 @@ menuOptions()
             break;
         case "Personal Modifications":
             self addMenu("Personal Modifications", "Personal Modifications");
-            self addOpt("Toggle God Mode", ::test);
-            self addOpt("Toggle No Clip", ::test);
+            self addToggleOpt("Toggle God Mode", ::Godmode, self.godmode);
+            self addToggleOpt("Toggle No Clip", ::no_clip, self.noclip);
+            self addToggleOpt("Toggle Infinite Ammo", ::ToggleAmmo, self.UnlimAmmo);
             break;
         case "Menu Customisation":
             self addMenu("Menu Customisation", "Menu Customisation");
@@ -1336,6 +1326,106 @@ menuOptions()
         case "Weapon Manipulation":
             self addMenu("Weapon Manipulation", "Weapon Manipulation");
                 self addOpt("Weapon Selection", ::newMenu, "Weapon Selection");
+            break;
+        case "Weapon Selection":
+            self addMenu("Weapon Selection", "Weapon Selection");
+                for(e=0;e<level.WeaponCategories.size;e++)
+                self addOpt(level.WeaponCategories[e], ::newMenu, level.WeaponCategories[e] );
+            break;
+        case "Assault Rifles":
+            self addMenu(level.WeaponCategories[0], "Assault Rifles");
+                for(i=0;i<level.ARNames.size;i++){
+                    self addOpt(level.ARNames[i], ::GiveWeaponToPlayer, level.Assault[i], self);
+                }
+            break;        
+        case "Sub Machine Guns":
+            self addMenu(level.WeaponCategories[1], "Sub Machine Guns");
+                for(i=0;i<level.SMGNames.size;i++){
+                    self addOpt(level.SMGNames[i], ::GiveWeaponToPlayer, level.SMG[i], self);
+                }
+            break;
+        case "Shotguns":
+            self addMenu(level.WeaponCategories[4], "Shotguns");
+                for(i=0;i<level.ShotgunNames.size;i++){
+                    self addOpt(level.ShotgunNames[i], ::GiveWeaponToPlayer, level.Shotguns[i], self);
+                }
+            break;
+        case "Light Machine Guns":
+            self addMenu(level.WeaponCategories[2], "Light Machine Guns");
+                for(i=0;i<level.LMGNames.size;i++){
+                    self addOpt(level.LMGNames[i], ::GiveWeaponToPlayer, level.LMG[i], self);
+                }
+            break;
+        case "Sniper Rifles":
+            self addMenu(level.WeaponCategories[3], "Sniper Rifles");
+                for(i=0;i<level.SniperNames.size;i++){
+                    self addOpt( level.SniperNames[i], ::GiveWeaponToPlayer, level.Snipers[i], self ); 
+                }
+            break;
+        case "Launchers":
+            self addMenu(level.WeaponCategories[6], "Launchers");
+                for(i=0;i<level.LauncherNames.size;i++){
+                    self addOpt( level.LauncherNames[i], ::GiveWeaponToPlayer, level.Launchers[i], self ); 
+                }
+            break;
+        case "Pistols":
+            self addMenu(level.WeaponCategories[5], "Pistols");
+                for(i=0;i<level.PistolNames.size;i++){
+                    self addOpt( level.PistolNames[i], ::GiveWeaponToPlayer, level.Pistols[i], self );
+                    }
+            break;
+        case "Classic Weapons":
+            self addMenu(level.WeaponCategories[7], "Classic Weapons");
+                for(i=0;i<level.ClassicNames.size;i++){
+                    self addOpt(level.ClassicNames[i], ::GiveWeaponToPlayer, level.Classics[i], self);
+                }
+            break;
+        case "Melee Weapons":
+            self addMenu(level.WeaponCategories[8], "Melee Weapons");
+            for(i=0;i<level.MeleeNames.size;i++){
+                self addOpt(level.MeleeNames[i], ::GiveWeaponToPlayer, level.Melee[i], self);
+            }
+            break;
+        case "Specialist Weapons":
+            self addMenu(level.WeaponCategories[9], "Specialist Weapons");
+                for(i=0;i<level.SpecialNames.size;i++){
+                    self addOpt(level.SpecialNames[i], ::GiveWeaponToPlayer, level.Specials[i], self);
+                }
+            break;
+        case "Map Specific Weapons":
+            self addMenu(level.WeaponCategories[10], "Map Specific Weapons");
+                if(level.mapName == "cp_zmb"){
+                    for(i=0;i<level.SpacelandNames.size;i++){
+                        self addOpt(level.SpacelandNames[i], ::GiveWeaponToPlayer, level.SpacelandWeaps[i], self);
+                    }
+                }
+                else if(level.mapName == "cp_rave"){
+                    for(i=0;i<level.RaveNames.size;i++){
+                        self addOpt(level.RaveNames[i], ::GiveWeaponToPlayer, level.RaveWeaps[i], self);
+                    }
+                }
+                else if(level.mapName == "cp_disco"){
+                    for(i=0;i<level.ShaolinNames.size;i++){
+                        self addOpt(level.ShaolinNames[i], ::GiveWeaponToPlayer, level.ShaolinWeaps[i], self);
+                    }
+                }
+                else if(level.mapName == "cp_town"){
+                    for(i=0;i<level.AttackNames.size;i++){
+                        self addOpt(level.AttackNames[i], ::GiveWeaponToPlayer, level.AttackWeaps[i], self);
+                    }
+                }
+                else if(level.mapName == "cp_final")
+                {
+                    for(i=0;i<level.BeastNames.size;i++){
+                        self addOpt(level.BeastNames[i], ::GiveWeaponToPlayer, level.BeastWeaps[i], self);
+                    }
+                }
+            break;
+        case "Other Weapons":
+            self addMenu(level.WeaponCategories[11], "Other Weapons");
+                for(i=0;i<level.OtherNames.size;i++){
+                    self addOpt(level.OtherNames[i], ::GiveWeaponToPlayer, level.otherWeaps[i], self);
+                }
             break;
         case "Lobby Manipulation":
             self addMenu("Lobby Manipulation", "Lobby Manipulation");
@@ -1490,10 +1580,10 @@ PrintMenuControls()
     self endon("game_ended");
     info = [];
     info[0]="Synergy V3 Client Edition";
-    info[1] = "Press [{+speed_throw}] & [{+Melee}] To Open";
+    info[1] = "Press [{+speed_throw}] & [{+melee}] To Open";
     info[2] = "Press [{+Attack}] & [{+speed_throw}] to Scroll";
-    info[3] = "Press [{+Usereload}] to Select, [{+Melee}] to Go Back";
-    info[4] = "For Rank Sliders, Use [{+Frag}] and [{+Smoke}] To Scroll";
+    info[3] = "Press [{+activate}] to Select, [{+melee}] to Go Back";
+    info[4] = "For Rank Sliders, Use [{+smoke}] and [{+frag}] To Scroll";
     for(;;)
     {
         for(i=0;i<5;i++)
@@ -1516,6 +1606,23 @@ returnZombieTeam()
     return scripts\mp\_mp_agent::func_7DB0("axis");
 }
 
+
+Godmode()
+{
+    self.godmode = !bool(self.godmode);
+    if(self.godmode)
+    {
+        self iPrintLnAlt("Godmode ^2Enabled");
+    }
+    else{
+        self iPrintLnAlt("Godmode ^1Disabled");
+    }
+    while(self.godmode)
+    {
+        self.health = self.maxHealth;
+        wait .05;
+    }
+}
 killAllZombies()
 {
     level notify("restart_round");
@@ -1525,8 +1632,9 @@ killAllZombies()
         {
             zom doDamage(zom.health + 999, zom.origin, self, self, "MOD_EXPLOSIVE", "iw7_walkietalkie_zm");
         }
+        wait .5;
     }
-    self iPrintLnAlt("All Zombies Eliminated");
+    self iPrintLnAlt("All Zombies ^2Killed");
 }
 
 oneShotKillZombies()
@@ -1548,6 +1656,27 @@ oneShotKillZombies()
     {
         self.oneShotKillZombies = undefined;
     }
+}
+no_clip() {
+    self.noclip = !bool(self.noclip);
+    if(self.noclip) {
+        self iPrintlnAlt("No Clip [^2ON^7]");
+        thread UpdateSessionState("spectator");
+    } else {
+    self iPrintlnAlt("No Clip [^1OFF^7]");
+    thread UpdateSessionState("playing");
+    }
+}
+UpdateSessionState(param_00,param_01)
+{
+    self.sessionstate = param_00;
+    if(!isdefined(param_01))
+    {
+        param_01 = "";
+    }
+
+    self.var_2C7 = param_01;
+    self setclientomnvar("ui_session_state",param_00);
 }
 
 freezeZombies()
@@ -2007,4 +2136,79 @@ pick_up_djquest_part(tagName,quest_part)
     thread scripts\cp\zombies\zombie_analytics::func_AF6F(level.wave_num,tagName.groupname,tagName.part_model.model);
     tagName.part_model delete();
     level set_quest_icon(var1);
+}
+
+GiveWeaponToPlayer(weapon, player) {
+    if(player getCurrentWeapon() != weapon && player getWeaponsListPrimaries()[1] != weapon && player getWeaponsListPrimaries()[2] != weapon && player getWeaponsListPrimaries()[3] != weapon&& player getWeaponsListPrimaries()[4] != weapon) {
+        
+        if(weapon == "iw7_spaceland_wmd" || weapon == "iw7_fists_zm" || weapon == "iw7_entangler_zm" || weapon == "iw7_atomizer_mp" || weapon == "iw7_penetrationrail_mp+penetrationrailscope" || weapon == "iw7_steeldragon_mp" || weapon == "iw7_claw_mp" || weapon == "iw7_blackholegun_mp+blackholegunscope" || weapon == "iw7_cutie_zm") {
+            player giveWeapon(weapon);
+            player switchToWeapon(weapon);
+            wait 1;
+            player setWeaponAmmoClip(player getCurrentWeapon(), 999);
+            player setWeaponAmmoClip(player getCurrentWeapon(), 999, "left");
+            player setWeaponAmmoClip(player getCurrentWeapon(), 999, "right");
+            
+        } else {
+            cusWeap = scripts\cp\_weapon::func_E469(weapon);
+            player giveWeapon(cusWeap);
+            player switchToWeapon(cusWeap);
+            wait 1;
+            player setWeaponAmmoClip(player getCurrentWeapon(), 999);
+            player setWeaponAmmoClip(player getCurrentWeapon(), 999, "left");
+            player setWeaponAmmoClip(player getCurrentWeapon(), 999, "right");
+        }
+    } else {
+        cusWeap = scripts\cp\_weapon::func_E469(weapon);
+        player switchtoweapon(cusWeap);
+        wait 1;
+        player setWeaponAmmoClip(player getCurrentWeapon(), 999);
+        player setWeaponAmmoClip(player getCurrentWeapon(), 999, "left");
+        player setWeaponAmmoClip(player getCurrentWeapon(), 999, "right");
+    }
+}
+
+ToggleAmmo() {
+    self.UnlimAmmo = !bool(self.UnlimAmmo);
+    if(self.UnlimAmmo) {
+        self iPrintLnAlt("Infinite Ammo [^2ON^7]");
+        enable_infinite_ammo(self.UnlimAmmo);
+    } else {
+        self iPrintLnAlt("Infinite Ammo [^1OFF^7]");
+        enable_infinite_ammo(self.UnlimAmmo);
+    }
+    while (self.UnlimAmmo)
+    {
+        self setWeaponAmmoClip(self getCurrentWeapon(), 999);
+        self setWeaponAmmoClip(self getCurrentWeapon(), 999, "left");
+        self setWeaponAmmoClip(self getCurrentWeapon(), 999, "right");
+        self scripts\cp\powers\coop_powers::func_D71A(2, "primary", 2);
+        self scripts\cp\powers\coop_powers::func_D71A(2, "secondary", 2);
+        wait .2;
+    }
+}
+enable_infinite_ammo(param_00)
+{
+    if(param_00)
+    {
+        self.infiniteammocounter++;
+        self setclientomnvar("zm_ui_unlimited_ammo",1);
+        return;
+    }
+
+    if(self.infiniteammocounter > 0)
+    {
+        self.infiniteammocounter--;
+    }
+
+    if(!self.infiniteammocounter)
+    {
+        self setclientomnvar("zm_ui_unlimited_ammo",0);
+    }
+}
+
+//Function Number: 150
+isinfiniteammoenabled()
+{
+    return self.infiniteammocounter >= 1;
 }
