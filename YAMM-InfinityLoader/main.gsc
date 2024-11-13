@@ -1279,6 +1279,8 @@ menuOptions()
             self addToggleOpt("Toggle No Clip", ::no_clip, self.noclip);
             self addToggleOpt("Toggle Infinite Ammo", ::ToggleAmmo, self.UnlimAmmo);
             self addOpt("Score Menu", ::newMenu, "Score Menu");
+            self addOpt("Random Teleport", ::ActivateFAF, "anywhere_but_here", self);
+            self addOpt("Give All Perks", ::AllPerks, self);
             break;
         case "Score Menu":
             self addMenu("Score Menu", "Score Menu");
@@ -1467,6 +1469,7 @@ menuOptions()
                 self addOpt("Grab SetiCom Parts", ::GrabSetiComParts);
                 self addOpt("Take the Seticom", ::GrabTheSeticom);
                 self addOpt("Activate Ghosts N Skulls", ::CompleteGnS);
+                self addOpt("Play Scattered Lies", ::PlayAudioToClients, "mus_pa_final_hidden_track");
             break;
         case "Rave in the Redwoods":
             self addMenu("Rave in the Redwoods", "Rave in the Redwoods");
@@ -1532,6 +1535,7 @@ ClientOptions()
             self addToggleOpt("Toggle NoClip", ::ClientHandler, player.noclip, 2, player);
             self addToggleOpt("Toggle Infinite Ammo", ::ClientHandler, player.UnlimAmmo, 3, player);
             self addOpt("Max Player Score", ::ClientHandler, 4, player);
+            self addOpt("Give All Perks", ::ClientHandler, 5, player);
             break;
         case "Stat Manipulation Client":
             self addMenu("Stat Manipulation Client", "Stat Manipulation "+name);
@@ -1544,9 +1548,110 @@ ClientOptions()
             break;
         case "Equip Weaps Client":
             self addMenu("Equip Weaps Client", "Equipment and Weapons");
+                self addOpt("Weapon Selection", ::newMenu, "Weaps Client");
                 for(t=0;t<level.trapNames.size;t++)
                     self addOpt("Give Trap: "+level.trapNames[t], ::giveTrap, level.trapNames[t], player);
              break;
+        case "Weaps Client":
+            self addMenu("Weaps Client", "Weapon Selection");
+                for(e=0;e<level.WeaponCategories.size;e++)
+                self addOpt(level.WeaponCategories[e], ::newMenu, level.WeaponCategories[e] + " Client");
+            break;
+            case "Assault Rifles Client":
+        self addMenu(level.WeaponCategories[0]+" Client", "Assault Rifles");
+                for(i=0;i<level.ARNames.size;i++){
+                    self addOpt(level.ARNames[i], ::GiveWeaponToPlayer, level.Assault[i], player);
+                }
+            break;        
+            case "Sub Machine Guns Client":
+        self addMenu(level.WeaponCategories[1]+" Client", "Sub Machine Guns");
+                for(i=0;i<level.SMGNames.size;i++){
+                    self addOpt(level.SMGNames[i], ::GiveWeaponToPlayer, level.SMG[i], player);
+                }
+            break;
+            case "Shotguns Client":
+        self addMenu(level.WeaponCategories[4]+" Client", "Shotguns");
+                for(i=0;i<level.ShotgunNames.size;i++){
+                    self addOpt(level.ShotgunNames[i], ::GiveWeaponToPlayer, level.Shotguns[i], player);
+                }
+            break;
+            case "Light Machine Guns Client":
+        self addMenu(level.WeaponCategories[2]+" Client", "Light Machine Guns");
+                for(i=0;i<level.LMGNames.size;i++){
+                    self addOpt(level.LMGNames[i], ::GiveWeaponToPlayer, level.LMG[i], player);
+                }
+            break;
+            case "Sniper Rifles Client":
+        self addMenu(level.WeaponCategories[3]+" Client", "Sniper Rifles");
+                for(i=0;i<level.SniperNames.size;i++){
+                    self addOpt( level.SniperNames[i], ::GiveWeaponToPlayer, level.Snipers[i],player); 
+                }
+            break;
+            case "Launchers Client":
+        self addMenu(level.WeaponCategories[6]+ " Client", "Launchers");
+                for(i=0;i<level.LauncherNames.size;i++){
+                    self addOpt( level.LauncherNames[i], ::GiveWeaponToPlayer, level.Launchers[i], player ); 
+                }
+            break;
+            case "Pistols Client":
+        self addMenu(level.WeaponCategories[5]+" Client", "Pistols");
+                for(i=0;i<level.PistolNames.size;i++){
+                    self addOpt( level.PistolNames[i], ::GiveWeaponToPlayer, level.Pistols[i], player );
+                    }
+            break;
+            case "Classic Weapons Client":
+        self addMenu(level.WeaponCategories[7]+"Client", "Classic Weapons");
+                for(i=0;i<level.ClassicNames.size;i++){
+                    self addOpt(level.ClassicNames[i], ::GiveWeaponToPlayer, level.Classics[i], player);
+                }
+            break;
+            case "Melee Weapons Client":
+        self addMenu(level.WeaponCategories[8]+" Client", "Melee Weapons");
+            for(i=0;i<level.MeleeNames.size;i++){
+                self addOpt(level.MeleeNames[i], ::GiveWeaponToPlayer, level.Melee[i], player);
+            }
+            break;
+            case "Specialist Weapons Client":
+        self addMenu(level.WeaponCategories[9] + "Client", "Specialist Weapons");
+                for(i=0;i<level.SpecialNames.size;i++){
+                    self addOpt(level.SpecialNames[i], ::GiveWeaponToPlayer, level.Specials[i], player);
+                }
+            break;
+            case "Map Specific Weapons Client":
+            self addMenu(level.WeaponCategories[10] +" Client", "Map Specific Weapons");
+                if(level.mapName == "cp_zmb"){
+                    for(i=0;i<level.SpacelandNames.size;i++){
+                        self addOpt(level.SpacelandNames[i], ::GiveWeaponToPlayer, level.SpacelandWeaps[i], player);
+                    }
+                }
+                else if(level.mapName == "cp_rave"){
+                    for(i=0;i<level.RaveNames.size;i++){
+                        self addOpt(level.RaveNames[i], ::GiveWeaponToPlayer, level.RaveWeaps[i], player);
+                    }
+                }
+                else if(level.mapName == "cp_disco"){
+                    for(i=0;i<level.ShaolinNames.size;i++){
+                        self addOpt(level.ShaolinNames[i], ::GiveWeaponToPlayer, level.ShaolinWeaps[i], player);
+                    }
+                }
+                else if(level.mapName == "cp_town"){
+                    for(i=0;i<level.AttackNames.size;i++){
+                        self addOpt(level.AttackNames[i], ::GiveWeaponToPlayer, level.AttackWeaps[i], player);
+                    }
+                }
+                else if(level.mapName == "cp_final")
+                {
+                    for(i=0;i<level.BeastNames.size;i++){
+                        self addOpt(level.BeastNames[i], ::GiveWeaponToPlayer, level.BeastWeaps[i], player);
+                    }
+                }
+            break;
+            case "Other Weapons Client":
+            self addMenu(level.WeaponCategories[11]+ " Client", "Other Weapons");
+                for(i=0;i<level.OtherNames.size;i++){
+                    self addOpt(level.OtherNames[i], ::GiveWeaponToPlayer, level.otherWeaps[i], player);
+                }
+            break;
         case "Trolling Options":
             self addMenu("Trolling Options", "Trolling Options");
             self addOpt("Send Player To Jail", ::ClientHandler, 5, player);
@@ -1836,7 +1941,7 @@ force_song(param_00,param_01,param_02,param_03,param_04,param_05,param_06)
     var_07.var_5745 = "";
     var_07.var_7783 = "music";
     level.var_A4BD[level.var_A4BD.size] = var_07;
-    play_sound_in_space("zmb_jukebox_on",param_00);
+    scripts\common\utility::func_CE2C("zmb_jukebox_on",param_00, (0,0,0));
 
     var_08 = spawn("script_origin",param_00);
     var_08 playloopsound(param_01);
@@ -2645,4 +2750,10 @@ RainbowOutlines()
         self set_outline_color(5);
         wait 1.5;
     }
+}
+
+AllPerks()
+{
+    self thread scripts\cp\maps\cp_zmb\cp_zmb_ghost_wave::func_5FB7(self);
+    self iprintlnbold("^2All perks have been given");
 }
