@@ -1968,16 +1968,8 @@ func_2286(param_00,param_01)
 }
 set_quest_icon(param_00)
 {
-    func_93F5();
-    func_F560(param_00);
-}
-func_F560(param_00)
-{
     setomnvarbit("zombie_quest_piece",param_00,1);
     setclientmatchdata("questPieces","quest_piece_" + param_00,1);
-}
-func_93F5()
-{
     if(!isdefined(level.num_of_quest_pieces_completed))
     {
         level.num_of_quest_pieces_completed = 0;
