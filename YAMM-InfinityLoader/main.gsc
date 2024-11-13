@@ -109,6 +109,7 @@ InitializeMenu()
     level.BeastNames       = ["Venom-X"];
     level.otherWeaps       = ["iw7_fists_zm", "iw7_entangler_zm"];
     level.OtherNames       = ["Fists", "Entangler"];
+    level.trapNames        = ["Sentry Turret","Fireworks Trap","Medusa Device","Electric Trap","Boombox","Revocator","Kindle Pops","Lazer Window Trap"];
     if(level.script == "cp_zmb"){ level.jailPos = (3356.53,-996.361, -195.873); level.freePos = (640.463,919.658,0.126336);} else if(level.script == "cp_rave") { } else if(level.script == "cp_disco") { }
 }
 
@@ -225,7 +226,10 @@ GetPresetColours(ID)
     RGB = [(0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1), (1, 1, 0), (0, 1, 1), (1, .5, 0), (1, 0, 1), (1, 1, 1)];
     return RGB[ID];
 }
-
+GetTrapNames()
+{
+    return "sentry|fireworks|medusa|electric|boombox|revocator|gascan|windowtrap";
+}
 GetColoursSlider(Bool)
 {
     return (IsDefined(Bool) ? "|Red|Green|Blue|Yellow|Cyan|Orange|Purple|White" : "Black|Red|Green|Blue|Yellow|Cyan|Orange|Purple|White");
@@ -1322,7 +1326,14 @@ menuOptions()
         case "Weapon Manipulation":
             self addMenu("Weapon Manipulation", "Weapon Manipulation");
                 self addOpt("Weapon Selection", ::newMenu, "Weapon Selection");
+                self addOpt("Equipment Menu", ::newMenu, "Equipment Menu");
+                self addOptSlider("Give Trap", "sentry|fireworks|medusa|electric|boombox|revocator|gascan|windowtrap", ::giveTrap,undefined, undefined, self);
             break;
+        case "Equipment Menu":
+        self addMenu("Equipment Menu", "Equipment Selection");
+                for(t=0;t<level.trapNames.size;t++)
+                self addOpt("Give Trap: "+level.trapNames[t], ::giveTrap, level.trapNames[t], self);
+             break;
         case "Weapon Selection":
             self addMenu("Weapon Selection", "Weapon Selection");
                 for(e=0;e<level.WeaponCategories.size;e++)
@@ -1431,6 +1442,11 @@ menuOptions()
                 {
                     self addOpt("Open All Doors", ::OpenAllDoors);
                 }
+                self addSlider("Edit Round", level.wave_num,1,999,1,::EditRound);
+                self addOpt("Max Round", ::MaxRound);
+                self addToggleOpt("Toggle Outlines", ::outline_zombies, self.outline_zombies);
+                self addOpt("Rainbow Outlines", ::RainbowOutlines);
+                self addSlider("Set Outline Color", self.outline_color,0,5,1,::ChangeOutlineColor);
                 
             break;
             
@@ -1438,8 +1454,10 @@ menuOptions()
             self addMenu("Profile Manipulation", "Profile Manipulation");
                 self addOpt("Complete All Challenges", ::CompleteChallenges, self);
                 self addOpt("Complete Contracts", ::CompleteActiveContracts, self);
-                self addSlider("Edit Rank",0, 0,999,1,::SetPlayerRank, self);
+                self addSlider("Edit Rank",0, 0,999,1,::SetPlayerRank, undefined, undefined, self);
                 self addOpt("Unlock Directors Cut", ::UnlockDC, self);
+                self addOpt("Unlock All Talismans", ::UnlockTalismans, self);
+                self addOpt("Give Soul Keys", ::SoulKeyUnlock, self);
             break;
         case "Zombies in Spaceland":
             self addMenu("Zombies in Spaceland", "Zombies in Spaceland");
@@ -1457,15 +1475,18 @@ menuOptions()
             break;
         case "Shaolin Shuffle":
             self addMenu("Shaolin Shuffle", "Shaolin Shuffle");
+                self addOpt("Play Beat of the Drum", ::PlayAudioToClients, "mus_pa_disco_hidden_track");
                 self addOpt("Activate Ghosts N Skulls", ::CompleteGnS);
             break;
 
-        case "Attack of the Radioactive Thing":
-            self addMenu("Attack of the Radioactive Thing", "Attack of the Radioactive Thing");
+        case "Radioactive Thing":
+            self addMenu("Radioactive Thing", "Attack of the Radioactive Thing");
+                self addOpt("Play Brackyura boogie", ::PlayAudioToClients, "mus_pa_town_hidden_track");
                 self addOpt("Activate Ghosts N Skulls", ::CompleteGnS);
             break;
         case "Beast from Beyond":
             self addMenu("Beast from Beyond", "Beast from Beyond");
+                self addOpt("Play Scattered Lies", ::PlayAudioToClients, "mus_pa_final_hidden_track");
                 self addOpt("Activate Ghosts N Skulls", ::CompleteGnS);
             break;
         case "AllAccess":
@@ -1503,6 +1524,7 @@ ClientOptions()
             self addOpt("Personal Modifications", ::newMenu, "Personal Modifications Client");
             self addOpt("Stat Manipulation", ::newMenu, "Stat Manipulation Client");
             self addOpt("Trolling Options", ::newMenu, "Trolling Options");
+            self addOpt("Equipment and Weapons", ::newMenu, "Equip Weaps Client");
             break;
         case "Personal Modifications Client":
             self addMenu("Personal Modifications Client", "Personal Modifications "+Name);
@@ -1511,7 +1533,20 @@ ClientOptions()
             self addToggleOpt("Toggle Infinite Ammo", ::ClientHandler, player.UnlimAmmo, 3, player);
             self addOpt("Max Player Score", ::ClientHandler, 4, player);
             break;
-            
+        case "Stat Manipulation Client":
+            self addMenu("Stat Manipulation Client", "Stat Manipulation "+name);
+            self addOpt("Complete All Challenges", ::CompleteChallenges, player);
+            self addOpt("Complete Contracts", ::CompleteActiveContracts, player);
+            self addSlider("Edit Rank",0, 0,999,1,::SetPlayerRank, undefined, undefined, player);
+            self addOpt("Unlock Directors Cut", ::UnlockDC, player);
+            self addOpt("Unlock All Talismans", ::UnlockTalismans, player);
+            self addOpt("Unlock Soul Keys", ::SoulKeyUnlock, player);
+            break;
+        case "Equip Weaps Client":
+            self addMenu("Equip Weaps Client", "Equipment and Weapons");
+                for(t=0;t<level.trapNames.size;t++)
+                    self addOpt("Give Trap: "+level.trapNames[t], ::giveTrap, level.trapNames[t], player);
+             break;
         case "Trolling Options":
             self addMenu("Trolling Options", "Trolling Options");
             self addOpt("Send Player To Jail", ::ClientHandler, 5, player);
@@ -1530,7 +1565,7 @@ GetTehMap()
     if(level.script == "cp_zmb") {return "Zombies in Spaceland";}
     if(level.script == "cp_rave") {return "Rave in the Redwoods";}
     if(level.script == "cp_disco") {return "Shaolin Shuffle";}
-    if(level.script == "cp_town") {return "Attack of the Radioactive Thing";}
+    if(level.script == "cp_town") {return "Radioactive Thing";}
     if(level.script == "cp_final") {return "Beast from Beyond";}
 }
 
@@ -1626,8 +1661,16 @@ returnZombieTeam()
 {
     return scripts\mp\_mp_agent::func_7DB0("axis");
 }
-
-
+EditRound(newRoundNum)
+{
+    if(level.wave_num < 1) {self iPrintLnBold("Fool, wait for the round to start"); return;}
+    else{
+        self iPrintLnBold("Round Changing to: "+newRoundNum+" in TWO SECONDS!");
+        wait 2;
+        level.wave_num = newRoundNum;
+        thread killAllZombies();
+    }
+}
 Godmode()
 {
     self.godmode = !bool(self.godmode);
@@ -1646,18 +1689,28 @@ Godmode()
 }
 killAllZombies()
 {
-    level notify("restart_round");
-    for(i=0;i<3;i++)
+    level notify("wave_complete");
+    zombies = scripts\cp\_agent_utils::func_7DB0("axis");
+    if(isdefined(zombies))
     {
-        foreach( zom in returnZombieTeam() )
-        {
-            zom doDamage(zom.health + 999, zom.origin, self, self, "MOD_EXPLOSIVE", "iw7_walkietalkie_zm");
-        }
-        wait .5;
+        for(i = 0; i < zombies.size; i++)
+            zombies[i] DoDamage(zombies[i].health + 1, zombies[i].origin);
+        wait 1;
     }
     self iPrintLnBold("All Zombies ^2Killed");
 }
 
+MaxRound()
+{
+    if(level.wave_num < 1) {self iPrintLnBold("Fool, wait for the round to start"); return;}
+    else{
+        level notify("wave_complete");
+        self iPrintLnBold("Round Changing to: 2147483647 in TWO SECONDS!");
+        wait 2;
+        level.wave_num = 2147483646;
+        thread killAllZombies();
+    }
+}
 oneShotKillZombies()
 {
     if( !isDefined( self.oneShotKillZombies ) )
@@ -2446,5 +2499,150 @@ build_custom_weapon(weapon, camo, extra_attachments) {
     } else {
         weapon_custom = CombineArrays(extra_attachments, weapon);
         return weapon_custom;
+    }
+}
+
+UnlockTalismans(player)
+{
+    if(level.script == "cp_zmb")
+    {
+        player scripts\cp\_merits::func_D9AD("mt_tali_1"); 
+  
+    }
+    else if(level.script == "cp_rave")
+    {
+        player scripts\cp\_merits::func_D9AD("mt_tali_2");
+    }
+    else if(level.script == "cp_disco")
+    {
+        player scripts\cp\_merits::func_D9AD("mt_tali_3");
+    }
+    else if(level.script == "cp_town")
+    {
+        player scripts\cp\_merits::func_D9AD("mt_tali_4");
+    }
+    else if(level.script == "cp_final")
+    {
+        player scripts\cp\_merits::func_D9AD("mt_tali_5");
+    }
+    player setplayerdata("cp","haveItems","item_1",1);
+    player setplayerdata("cp","haveItems","item_2",1);
+    player setplayerdata("cp","haveItems","item_3",1);
+    player setplayerdata("cp","haveItems","item_4",1);
+    player setplayerdata("cp","haveItems","item_5",1);
+    player iPrintln("All Talismans ^2Unlocked");
+}
+setPlayerAtPoint(origin, angles) {
+    self setOrigin(origin);
+    self setPlayerAngles(angles);
+}
+SoulKeyUnlock(player)
+{
+     player getplayerdata("cp","haveSoulKeys","soul_key_1");
+      player getplayerdata("cp","haveSoulKeys","soul_key_2");
+      player getplayerdata("cp","haveSoulKeys","soul_key_3");
+      player getplayerdata("cp","haveSoulKeys","soul_key_4");
+      player getplayerdata("cp","haveSoulKeys","soul_key_5");
+      player setplayerdata("cp","haveSoulKeys","soul_key_1",1);
+      player setplayerdata("cp","haveSoulKeys","soul_key_2",1);
+      player setplayerdata("cp","haveSoulKeys","soul_key_3",1);
+      player setplayerdata("cp","haveSoulKeys","soul_key_4",1);
+      player setplayerdata("cp","haveSoulKeys","soul_key_5",1);
+      player iprintlnBold("You Now have ^2ALL Soul Keys");
+      wait 1;
+      player thread setPlayerAtPoint((-10250, 875, -1630), (0, 90, 0));
+      player iPrintLnBold("Interact with the ^2Soul Jar^7 to Unlock Directors Cut ^5Permanently");
+}
+  
+giveTrap(trap, player)
+{
+    switch(trap)
+    {
+        case "Sentry Turret":
+            scripts\cp\_weapon_autosentry::func_82BA(0, player);
+            break;
+        case "Fireworks Trap":
+            scripts\cp\zombies\craftables\_fireworks_trap::func_82B5(0, player);
+            break;
+        case "Medusa Device":
+            scripts\cp\zombies\craftables\_zm_soul_collector::func_82B8(0, player);
+            break;
+        case "Electric Trap":
+            scripts\cp\zombies\craftables\_electric_trap::func_82BB(0, player);
+            break;
+        case "Boombox":
+            scripts\cp\zombies\craftables\_boombox::func_82B4(0, player);
+            break;
+        case "Revocator":
+            scripts\cp\zombies\craftables\_revocator::func_82B9(0, player);
+            break;
+        case "Kindle Pops":
+            scripts\cp\zombies\craftables\_gascan::func_82B6(0, player);
+            break;
+        case "Lazer Window Trap":
+            lib_0D43::func_DAFF(0, player);
+            break;
+    }
+ }
+    
+outline_zombies() {
+    self.outline_zombies = !bool(self.outline_zombies);
+    if(self.outline_zombies) {
+        self iPrintlnBold("Zombie Outlines [^2ON^7]");
+        outline_zombies_loop();
+    } else {
+    self iPrintlnBold("Zombie Outlines [^1OFF^7]");
+        self notify("stop_outline_zombies");
+        foreach(zombie in returnZombieTeam()) {
+            scripts\cp\_outline::func_6221(zombie, level.players);
+        }
+    }
+}
+
+outline_zombies_loop() {
+    self endOn("stop_outline_zombies");
+    self endOn("game_ended");
+    
+    if(!isDefined(self.outline_color)) {
+        self.outline_color = 1;
+    }
+    
+    for(;;) {
+        foreach(zombie in returnZombieTeam()) {
+            scripts\cp\_outline::func_6221(zombie, level.players, self.outline_color, 0, 0, "high");
+        }
+        wait 0.2;
+    }
+}
+
+set_outline_color(value) {
+    self.outline_color = value;
+}
+ChangeOutlineColor(value)
+{
+    self notify("stop_rainbowOut");
+    wait .1;
+    self set_outline_color(value);
+}
+RainbowOutlines()
+{
+    self endon("stop_rainbowOut");
+    self endon("game_ended");
+    self endon("stop_outline_zombies");
+    
+    for(;;)
+    {
+        self set_outline_color(0);
+        wait 1.5;
+        self set_outline_color(1);
+        wait 1.5;
+        self set_outline_color(2);
+        wait 1.5;
+        self set_outline_color(3);
+        wait 1.5;
+        self set_outline_color(4);
+        wait 1.5;
+        self set_outline_color(5);
+        wait 1.5;
     }
 }
