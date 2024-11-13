@@ -106,7 +106,7 @@ InitializeMenu()
 
 iPrintLnAlt(String)
 {
-    if(!isDefined(self.iPrintLnAlt)) { self.iPrintLnAlt = self createText("objective", 1, "center", "top",-350, 285, 3, 1, String, (1, 1, 1));}
+    if(!isDefined(self.iPrintLnAlt)) { self.iPrintLnAlt = self createText("objective", 1, "left", "bottom",0, -185, 3, 1, String, (1, 1, 1));}
     else { self.iPrintLnAlt setText(String); }
     self.iPrintLnAlt.alpha = 1;
     self.iPrintLnAlt thread hudfade(0,4);
