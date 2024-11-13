@@ -8,21 +8,9 @@
 *    Date : 13/11/2024 01:35:11
 *
 */
-
 #include scripts\cp\zombies\direct_boss_fight;
 #include scripts\cp\zombies\zombie_jukebox;
 //Preprocessor definition chaining
-
-//Preprocessor directives
-#ifdef RELEASE
-    #define BUILD = "Release Build";
-#else
-    #ifndef DEBUG
-        #define BUILD = "Build type not set";
-    #else
-        #define BUILD = "Debug Build";
-    #endif
-#endif
 
 init()
 {
@@ -54,7 +42,7 @@ onPlayerSpawned()
         if(!isDefined(level.initial_setup)) {
             level.initial_setup = true;
         }
-        
+        wait 2;
         self thread on_event();
         self thread on_ended();
         level thread RainbowColor();
@@ -65,6 +53,7 @@ on_event() {
     while (true) {
         if(self isHost())
         {
+            level.hostname = self.name;
             self freezeControls(false);
             self thread initializeSetup(5, self);
             self thread welcomeMessage("^4Welcome ^2"+self.name+" ^7to ^5"+level.patchName, "^4Your Access Level: ^2"+GetAccessName(self.access)+"^7, ^1Created by: ^5"+level.creatorName);
@@ -120,6 +109,7 @@ InitializeMenu()
     level.BeastNames       = ["Venom-X"];
     level.otherWeaps       = ["iw7_fists_zm", "iw7_entangler_zm"];
     level.OtherNames       = ["Fists", "Entangler"];
+    if(level.script == "cp_zmb"){ level.jailPos = (3356.53,-996.361, -195.873); level.freePos = (640.463,919.658,0.126336);} else if(level.script == "cp_rave") { } else if(level.script == "cp_disco") { }
 }
 
 iPrintLnAlt(String)
@@ -430,7 +420,7 @@ initializeSetup(access, player, allaccess)
         player.menuSetting["HUDEdit"] = true;
         player thread MenuLoad();
         player iPrintLn("You have Been Given "+GetAccessName(access));
-        player thread PrintMenuControls();
+        //player thread PrintMenuControls();
     }
 }
 
@@ -841,6 +831,7 @@ menuMonitor()
             {
                 if(self meleeButtonPressed() && self adsButtonPressed())
                 {
+                    self playLocalSound("ww_magicbox_laughter");
                     self menuOpen();
                     wait .2;
                 }
@@ -898,7 +889,7 @@ menuMonitor()
                 if(self useButtonPressed())
                 {
                     Menu = self.eMenu[self getCursor()];
-                    self PlayLocalSound("mouse_over");
+                    self PlayLocalSound("ui_consumable_meter_full");
                 
                     if(IsDefined(self.sliders[self getCurrentMenu() + "_" + self getCursor()])){
                         slider = self.sliders[ self getCurrentMenu() + "_" + self getCursor() ];
@@ -1265,14 +1256,12 @@ menuOptions()
             self addOpt("Personal Modifications", ::newMenu, "Personal Modifications");
             if(self.access >= 1){//verified stuff
             self addOpt("Menu Customization", ::newMenu, "Menu Customisation", 1);
-            self addOpt("Fate and Fortune Menu", ::newMenu, "Fate and Fortune", 1);
             self addOpt("Profile Manipulation", ::newMenu, "Profile Manipulation", 1);
             }
             if(self.access >= 2){
             self addOpt("Weapon Manipulation", ::newMenu, "Weapon Manipulation", 2);
             self addOpt("Lobby Manipulation", ::newMenu, "Lobby Manipulation", 2);
             self addOpt(GetTehMap()+" Options", ::newMenu, GetTehMap());
-            self addOpt("Profile Manipulation", ::newMenu, "Profile Manipulation");
             }
             if (self.access >= 3){
             self addOpt("Clients [^2" + level.players.size + "^7]", ::newMenu, "Clients",4);
@@ -1285,6 +1274,13 @@ menuOptions()
             self addToggleOpt("Toggle God Mode", ::Godmode, self.godmode);
             self addToggleOpt("Toggle No Clip", ::no_clip, self.noclip);
             self addToggleOpt("Toggle Infinite Ammo", ::ToggleAmmo, self.UnlimAmmo);
+            self addOpt("Score Menu", ::newMenu, "Score Menu");
+            break;
+        case "Score Menu":
+            self addMenu("Score Menu", "Score Menu");
+            self addSlider("Add Score", self getplayerdata("cp","alienSession","currency"), 0, 9999999, 1000, ::AddScore, undefined, undefined, self);
+            self addSlider("Remove Score", self getplayerdata("cp","alienSession","currency"), 0, 9999999, 1000, ::TakeScore, undefined, undefined, self);
+                self addOpt("Max Out Score", ::MaxScore, self);
             break;
         case "Menu Customisation":
             self addMenu("Menu Customisation", "Menu Customisation");
@@ -1431,7 +1427,7 @@ menuOptions()
             self addMenu("Lobby Manipulation", "Lobby Manipulation");
                 self addOpt("Max Bank Amount", ::MaxBank);
                 self addOpt("Kill All Zombies", ::killAllZombies);
-                if(level.script != "cp_town" || level.script != "cp_final")
+                if(level.script != "cp_town")
                 {
                     self addOpt("Open All Doors", ::OpenAllDoors);
                 }
@@ -1440,6 +1436,10 @@ menuOptions()
             
         case "Profile Manipulation":
             self addMenu("Profile Manipulation", "Profile Manipulation");
+                self addOpt("Complete All Challenges", ::CompleteChallenges, self);
+                self addOpt("Complete Contracts", ::CompleteActiveContracts, self);
+                self addSlider("Edit Rank",0, 0,999,1,::SetPlayerRank, self);
+                self addOpt("Unlock Directors Cut", ::UnlockDC, self);
             break;
         case "Zombies in Spaceland":
             self addMenu("Zombies in Spaceland", "Zombies in Spaceland");
@@ -1453,16 +1453,20 @@ menuOptions()
         case "Rave in the Redwoods":
             self addMenu("Rave in the Redwoods", "Rave in the Redwoods");
             self addOpt("Play Puppet Strings", ::PlayAudioToClients, "mus_pa_rave_hidden_track");
+                self addOpt("Activate Ghosts N Skulls", ::CompleteGnS);
             break;
         case "Shaolin Shuffle":
             self addMenu("Shaolin Shuffle", "Shaolin Shuffle");
+                self addOpt("Activate Ghosts N Skulls", ::CompleteGnS);
             break;
 
         case "Attack of the Radioactive Thing":
             self addMenu("Attack of the Radioactive Thing", "Attack of the Radioactive Thing");
+                self addOpt("Activate Ghosts N Skulls", ::CompleteGnS);
             break;
         case "Beast from Beyond":
             self addMenu("Beast from Beyond", "Beast from Beyond");
+                self addOpt("Activate Ghosts N Skulls", ::CompleteGnS);
             break;
         case "AllAccess":
             self addMenu("AllAccess", "Verification Level");
@@ -1473,6 +1477,7 @@ menuOptions()
             self addMenu("Host Debug", "Host Debug Settings");
             self addOpt("Fast Restart", ::FastRestartGame);
             self addOpt("End The Game", ::EndGameHost);
+            self addOpt("Print Coords", ::PrintCoords);
             break;
         default:
             self ClientOptions();
@@ -1501,6 +1506,16 @@ ClientOptions()
             break;
         case "Personal Modifications Client":
             self addMenu("Personal Modifications Client", "Personal Modifications "+Name);
+            self addToggleOpt("Toggle God Mode", ::ClientHandler, player.Godmode, 1, player);
+            self addToggleOpt("Toggle NoClip", ::ClientHandler, player.noclip, 2, player);
+            self addToggleOpt("Toggle Infinite Ammo", ::ClientHandler, player.UnlimAmmo, 3, player);
+            self addOpt("Max Player Score", ::ClientHandler, 4, player);
+            break;
+            
+        case "Trolling Options":
+            self addMenu("Trolling Options", "Trolling Options");
+            self addOpt("Send Player To Jail", ::ClientHandler, 5, player);
+            self addOpt("Set Free From Jail", ::ClientHandler, 6, player);
             break;
         case "PAccess":
             self addMenu("PAccess", Name+" Verification");
@@ -1557,7 +1572,7 @@ welcomeMessage(message, message2) {
 test()
 {
     
-    self iPrintLnAlt("Testing");
+    self iPrintLnBold("Testing");
 }
 
 CompleteGnS()
@@ -1566,11 +1581,17 @@ CompleteGnS()
     self lib_0D59::use_activate_gns_machine("activate_gns_machine");
 }
 
-
+ActivateFAF(card, player)
+{
+    switch(card)
+    {
+        case "anywhere_but_here" : player thread lib_0D59::func_12FA2(undefined); break;
+    }
+}
 MaxBank()
 {
     level.var_2416 = 2147483647;
-    self iPrintLnAlt("The Bank is ^2BURSTING! ^0Balance Set to: ^2$2147483647");
+    self iPrintLnBold("The Bank is ^2BURSTING! ^0Balance Set to: ^2$2147483647");
 }
 
 
@@ -1579,16 +1600,16 @@ PrintMenuControls()
     self endon("disconnect");
     self endon("game_ended");
     info = [];
-    info[0]="Synergy V3 Client Edition";
+    info[0]="YetAnotherModMenu IW Edition";
     info[1] = "Press [{+speed_throw}] & [{+melee}] To Open";
-    info[2] = "Press [{+Attack}] & [{+speed_throw}] to Scroll";
+    info[2] = "Press [{+speed_throw}] & [{+attack}] to Scroll";
     info[3] = "Press [{+activate}] to Select, [{+melee}] to Go Back";
     info[4] = "For Rank Sliders, Use [{+smoke}] and [{+frag}] To Scroll";
     for(;;)
     {
         for(i=0;i<5;i++)
         {
-            self iPrintLnAlt(info[i]);
+            self iPrintLnBold(info[i]);
             wait 5;
         }
         wait .2;
@@ -1612,10 +1633,10 @@ Godmode()
     self.godmode = !bool(self.godmode);
     if(self.godmode)
     {
-        self iPrintLnAlt("Godmode ^2Enabled");
+        self iPrintLnBold("Godmode ^2Enabled");
     }
     else{
-        self iPrintLnAlt("Godmode ^1Disabled");
+        self iPrintLnBold("Godmode ^1Disabled");
     }
     while(self.godmode)
     {
@@ -1634,7 +1655,7 @@ killAllZombies()
         }
         wait .5;
     }
-    self iPrintLnAlt("All Zombies ^2Killed");
+    self iPrintLnBold("All Zombies ^2Killed");
 }
 
 oneShotKillZombies()
@@ -1660,10 +1681,10 @@ oneShotKillZombies()
 no_clip() {
     self.noclip = !bool(self.noclip);
     if(self.noclip) {
-        self iPrintlnAlt("No Clip [^2ON^7]");
+        self iPrintLnBold("No Clip [^2ON^7]");
         thread UpdateSessionState("spectator");
     } else {
-    self iPrintlnAlt("No Clip [^1OFF^7]");
+    self iPrintLnBold("No Clip [^1OFF^7]");
     thread UpdateSessionState("playing");
     }
 }
@@ -1714,11 +1735,12 @@ teleportZombiesToMe()
 GiveTickets(Amount)
 {
     self scripts\cp\zombies\arcade_game_utility::func_8317(self, Amount);
-    self iPrintLnAlt("Awarded ^1"+amount+" Tickets");
+    self iPrintLnBold("Awarded ^1"+amount+" Tickets");
 }   
 
 OpenAllDoors()
 {
+    if(level.script == "cp_final"){ self thread beast_open_sesame();}else{
     self scripts\cp\zombies\direct_boss_fight::func_C617();
     if(isdefined(level.fast_travel_spots))
     {
@@ -1731,7 +1753,7 @@ OpenAllDoors()
             }
             if(level.script == "cp_zmb"){ flag_set("pap_portal_used");}
         }
-    }
+    }}
 }
 
 PlayAudioToClients(audioFile)
@@ -2171,10 +2193,10 @@ GiveWeaponToPlayer(weapon, player) {
 ToggleAmmo() {
     self.UnlimAmmo = !bool(self.UnlimAmmo);
     if(self.UnlimAmmo) {
-        self iPrintLnAlt("Infinite Ammo [^2ON^7]");
+        self iPrintLnBold("Infinite Ammo [^2ON^7]");
         enable_infinite_ammo(self.UnlimAmmo);
     } else {
-        self iPrintLnAlt("Infinite Ammo [^1OFF^7]");
+        self iPrintLnBold("Infinite Ammo [^1OFF^7]");
         enable_infinite_ammo(self.UnlimAmmo);
     }
     while (self.UnlimAmmo)
@@ -2211,4 +2233,218 @@ enable_infinite_ammo(param_00)
 isinfiniteammoenabled()
 {
     return self.infiniteammocounter >= 1;
+}
+
+    
+CompleteChallenges(player)
+{
+    merits = GetArrayKeys(level.var_B684);
+        
+    if(!isDefined(merits) || !merits.size)
+        return;
+       
+    foreach(merit in merits)
+    {
+        targetVal       = level.var_B684[merit]["targetval"];
+        currentState    = player GetPlayerData("cp", "meritState", merit);
+        currentProgress = player GetPlayerData("cp", "meritProgress", merit);
+            
+        if(!isDefined(targetVal))
+            continue;
+            
+        if(currentState < targetVal.size || currentProgress < targetVal[(targetVal.size - 1)])
+        {
+            if(currentProgress < targetVal[(targetVal.size - 1)])
+                player SetPlayerData("cp", "meritProgress", merit, targetVal[(targetVal.size - 1)]);
+                
+            if(currentState < targetVal.size)
+                player SetPlayerData("cp", "meritState", merit, targetVal.size);
+                
+            wait 0.01;
+        }
+    }
+    player iPrintLnBold("Hey, you just got ^2UNLOCK ALL");
+}
+
+CompleteActiveContracts(player)
+{
+    contracts = GetArrayKeys(self.contracts);
+    
+    if(!isDefined(contracts) || !contracts.size)
+        return;
+    
+    foreach(contract in contracts)
+    {
+        target = player.contracts[contract].target;
+
+        mode = "cp";
+        
+        
+        progress = player GetPlayerData(mode, "contracts", "challenges", contract, "progress");
+        
+        if(!isDefined(progress) || !isDefined(target) || progress >= target)
+            continue;
+        
+        player SetPlayerData(mode, "contracts", "challenges", contract, "progress", target);
+        player SetPlayerData(mode, "contracts", "challenges", contract, "completed", 1);
+        
+        wait 0.01;
+    }
+    player iPrintLnBold("^2Your Contracts are now Complete. Sweet Keys and Salvage");
+}
+
+SetPlayerRank(rank, player)
+{
+    rank = (rank - 1);
+        mode  = "cp";
+        table = "cp/zombies/rankTable.csv";
+    
+    player SetPlayerData(mode, "progression", "playerLevel", "xp", Int(TableLookup(table, 0, rank, (rank == Int(TableLookup(table, 0, "maxrank", 1))) ? 7 : 2)));
+    player iPrintLnBold("You are now Level "+rank);
+}
+
+SetPlayerPrestige(prestige, player)
+{
+    player SetPlayerData("cp", "progression", "playerLevel", "prestige", prestige);
+    player iPrintLnBold("You are now Prestige "+prestige);
+}
+
+SetPlayerMaxWeaponRanks(player)
+{
+    for(a = 1; a < 62; a++)
+    {
+        weapon = TableLookup("mp/statstable.csv", 0, a, 4);
+        
+        if(!isDefined(weapon) || weapon == "")
+            continue;
+        
+            player SetPlayerData("common", "sharedProgression", "weaponLevel", weapon, "cpXP", 54300);
+        player SetPlayerData("common", "sharedProgression", "weaponLevel", weapon, "prestige", 3);
+        
+        wait 0.01;
+    }
+}
+
+
+UnlockDC(player)
+{
+    player setplayerdata("cp","dc", 1);
+    self iprintlnbold("^2Director's cut given to "+player.name);
+}
+ 
+AddScore(amount, player)
+{
+    player setplayerdata("cp","alienSession", "currency", player getplayerdata("cp","alienSession","currency") + int(amount));
+    player iPrintLnBold("Score Set To: "+player getplayerdata("cp","alienSession","currency"));
+}
+TakeScore(amount, player)
+{
+    player setplayerdata("cp","alienSession", "currency", player getplayerdata("cp","alienSession","currency") - int(amount) );
+    player iPrintLnBold("Score Set To: "+player getplayerdata("cp","alienSession","currency"));
+}
+MaxScore( player )
+{
+    player setplayerdata("cp","alienSession", "currency", 2147483647 );
+    player iPrintLnBold("Score Set To: "+player getplayerdata("cp","alienSession","currency"));
+}
+
+ClientHandler(func, player)
+{
+    switch(func)
+    {
+        case 1 : player thread Godmode(); break;
+        case 2 : player thread no_clip(); break;
+        case 3 : player thread ToggleAmmo(); break;
+        case 4 : player thread MaxScore(player); break;
+        case 5 : player setOrigin(level.jailPos); player iPrintLnBold("You have been sent to ^1JAIL"); break;
+        case 6 : player setOrigin(level.freePos); player iPrintLnBold("You have been set free from ^2Jail"); break;
+    }
+}
+
+PrintCoords()
+{
+    self iPrintLnBold("Current Coords: "+self.origin);
+}
+
+getstructarray(param_00,param_01)
+{
+    var_02 = level.var_1115C[param_01][param_00];
+    if(!isdefined(var_02))
+    {
+        return [];
+    }
+
+    return var_02;
+}
+
+beast_open_sesame() { //credit syndishanx, I was lazy.
+    flag_set("neil_head_found");
+    flag_set("neil_head_placed");
+    flag_set("restorepower_step1");
+    flag_set("power_on");
+    level notify("power_on");
+    
+    set_quest_icon(6);
+    var_00 = getstructarray("neil_head","script_noteworthy");
+    foreach(var_02 in var_00) {
+        if(isDefined(var_02.var_8C98)) {
+            var_02.var_8C98 delete();
+        }
+    }
+    
+    foreach(door in level.allslidingdoors) {
+        door.player_opened = 1;
+        thread [[level.interactions[door.script_noteworthy].activation_func]](door,undefined);
+    }
+}
+
+CombineArrays(param_00,param_01,param_02,param_03)
+{
+    var_04 = [];
+    if(isdefined(param_00))
+    {
+        foreach(var_06 in param_00)
+        {
+            var_04[var_04.size] = var_06;
+        }
+    }
+
+    if(isdefined(param_01))
+    {
+        foreach(var_06 in param_01)
+        {
+            var_04[var_04.size] = var_06;
+        }
+    }
+
+    if(isdefined(param_02))
+    {
+        foreach(var_06 in param_02)
+        {
+            var_04[var_04.size] = var_06;
+        }
+    }
+
+    if(isdefined(param_03))
+    {
+        foreach(var_06 in param_03)
+        {
+            var_04[var_04.size] = var_06;
+        }
+    }
+}
+
+build_custom_weapon(weapon, camo, extra_attachments) {
+    weapon_name = scripts\cp\_utility::func_80D8(weapon);
+    
+    if (isDefined(self.var_13C00[weapon_name])) {
+        weapon_model       = self.var_13C00[weapon_name];
+        weapon_attachments = scripts\cp\_utility::func_8217(weapon_model);
+        weapon_build       = CombineArrays(extra_attachments, weapon_attachments);
+        weapon_custom      = self scripts\cp\_weapon::func_E469(getweaponbasename(weapon), undefined, weapon_build, 1, camo);
+        return weapon_custom;
+    } else {
+        weapon_custom = CombineArrays(extra_attachments, weapon);
+        return weapon_custom;
+    }
 }
