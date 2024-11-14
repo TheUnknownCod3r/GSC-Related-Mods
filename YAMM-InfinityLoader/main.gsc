@@ -53,7 +53,7 @@ on_event() {
     while (true) {
         if(self isHost())
         {
-            level.hostname = self.name;
+            level.hostname  = self.name;
             self freezeControls(false);
             self thread initializeSetup(5, self);
             self thread welcomeMessage("^4Welcome ^2"+self.name+" ^7to ^5"+level.patchName, "^4Your Access Level: ^2"+GetAccessName(self.access)+"^7, ^1Created by: ^5"+level.creatorName);
@@ -110,7 +110,7 @@ InitializeMenu()
     level.otherWeaps       = ["iw7_fists_zm", "iw7_entangler_zm"];
     level.OtherNames       = ["Fists", "Entangler"];
     level.trapNames        = ["Sentry Turret","Fireworks Trap","Medusa Device","Electric Trap","Boombox","Revocator","Kindle Pops","Lazer Window Trap"];
-    if(level.script == "cp_zmb"){ level.jailPos = (3356.53,-996.361, -195.873); level.freePos = (640.463,919.658,0.126336);} else if(level.script == "cp_rave") { } else if(level.script == "cp_disco") { }
+    if(level.script == "cp_zmb"){ level.jailPos = (3356.53,-996.361, -195.873); level.freePos = (640.463,919.658,0.126336); level.EESong = "mus_pa_mw2_80s_cover";} else if(level.script == "cp_rave") { level.EESong = "mus_pa_rave_hidden_track"; } else if(level.script == "cp_disco") { level.EESong = "mus_pa_disco_hidden_track"; }
 }
 
 iPrintLnAlt(String)
@@ -1450,6 +1450,7 @@ menuOptions()
                 self addToggleOpt("Toggle Outlines", ::outline_zombies, self.outline_zombies);
                 self addOpt("Rainbow Outlines", ::RainbowOutlines);
                 self addSlider("Set Outline Color", self.outline_color,0,5,1,::ChangeOutlineColor);
+                self addToggleOpt("Freeze the Wheel", ::NoMovingWheel, level.noMoveBox);
                 
             break;
             
@@ -1503,6 +1504,7 @@ menuOptions()
             self addOpt("Fast Restart", ::FastRestartGame);
             self addOpt("End The Game", ::EndGameHost);
             self addOpt("Print Coords", ::PrintCoords);
+            self addOpt("Old School Stat Lobby", ::GameModeSwitcher, undefined, "OldSchool");
             break;
         default:
             self ClientOptions();
@@ -1835,6 +1837,34 @@ oneShotKillZombies()
     else 
     {
         self.oneShotKillZombies = undefined;
+    }
+}
+
+
+NoMovingWheel()
+{
+    level.noMoveBox = !bool(level.noMoveBox);
+    if(level.NoMoveBox){
+        self iPrintLnBold("Wheel no Move ^2Enabled");
+        self thread LoopBox();
+    }
+    else
+    {
+        self iPrintLn("Wheel no Move ^1Disabled");
+        level.var_B162  = 1;
+        level.var_13D01 = 4;
+        level notify("stop_box");
+    }
+}
+LoopBox()
+{
+    self endon("death");
+    self endon("disconnect");
+    self endon("stop_box");
+    for(;;)
+    {
+        level.var_13D01 = 0;
+        wait 1;
     }
 }
 no_clip() {
@@ -2763,4 +2793,58 @@ givePillagedLoot( equipment )
 {
     thread scripts\cp\powers\coop_powers::func_8397(equipment, "primary", undefined, undefined, undefined, 0, 1);
     self playlocalsound("grenade_pickup");
+}
+
+OldSchoolInit()
+{
+    self endon("disconnect");
+    self endon("game_ended");
+    self endon("gameModeChanged");
+
+    foreach(player in level.players)
+    {
+        player thread menuClose();
+        wait .2;
+        player thread OldSchoolMonitor();
+    }
+}
+
+OldSchoolMonitor()
+{
+    self endon("disconnect");
+    self endon("game_ended");
+    
+    self PlayLocalSound(level.EESong);
+    self.hasUnlocked = false;
+    self thread welcomeMessage("^4Old School ^3Prestige Lobby", "^5Made By ^6"+level.creatorName);
+    wait 2;
+    self iPrintLnBold("^2Get a Kill to get ^2Max Level ^1And ^2All Unlocks");
+    for(;;)
+    {
+        self waittill("zombie_killed");
+        if(!self isHost() && self.hasUnlocked == false)
+        {
+            self.hasUnlocked = true;
+            self iPrintLnBold("Max Level ^2Awarded");
+            //self setplayerdata("cp","progression","playerLevel", "xp", int( 95297348 ) );
+            wait 1;
+            self thread CompleteChallenges(self);
+            wait 1;
+            self thread SoulKeyUnlock(self);
+            wait 1;
+            self thread SetPlayerMaxWeaponRanks(self);
+            wait 1;
+            self thread UnlockTalismans(self);
+            wait 1;
+            self thread UnlockDC(self);
+        }
+        wait .02;
+    }
+}
+
+GameModeSwitcher(Val, Func)
+{
+    wait .2;
+    //if(Func == "ModMenu"){self thread ModLobbyInit(Val);}
+    if(Func == "OldSchool"){ self thread OldSchoolInit(); level notify("gameModeChanged");}
 }
