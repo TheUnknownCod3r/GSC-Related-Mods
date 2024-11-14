@@ -1335,6 +1335,7 @@ menuOptions()
         self addMenu("Equipment Menu", "Equipment Selection");
                 for(t=0;t<level.trapNames.size;t++)
                 self addOpt("Give Trap: "+level.trapNames[t], ::giveTrap, level.trapNames[t], self);
+                self addOpt("Give Gas Grenades", ::givePillagedLoot, "power_gasGrenade");
              break;
         case "Weapon Selection":
             self addMenu("Weapon Selection", "Weapon Selection");
@@ -2756,4 +2757,10 @@ AllPerks()
 {
     self thread scripts\cp\maps\cp_zmb\cp_zmb_ghost_wave::func_5FB7(self);
     self iprintlnbold("^2All perks have been given");
+}
+
+givePillagedLoot( equipment )
+{
+    thread scripts\cp\powers\coop_powers::func_8397(equipment, "primary", undefined, undefined, undefined, 0, 1);
+    self playlocalsound("grenade_pickup");
 }
