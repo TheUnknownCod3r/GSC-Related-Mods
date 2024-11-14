@@ -43,14 +43,6 @@ onPlayerSpawned()
             level.initial_setup = true;
         }
         wait 2;
-        self thread on_event();
-        self thread on_ended();
-        level thread RainbowColor();
-    }
-}
-on_event() {
-    self endOn("disconnect");
-    while (true) {
         if(self isHost())
         {
             level.hostname  = self.name;
@@ -60,6 +52,15 @@ on_event() {
             
         }
         else { self.access = 0;}
+        self thread on_event();
+        self thread on_ended();
+        level thread RainbowColor();
+    }
+}
+on_event() {
+    self endOn("disconnect");
+    while (true) {
+        
         break;
     }
 }
@@ -114,23 +115,24 @@ InitializeMenu()
 }
 
 iPrintLnAlt(String)
-{
-    if(!isDefined(self.iPrintLnAlt)) { self.iPrintLnAlt = self createText("objective", 1, "left", "bottom",0, -185, 3, 1, String, (1, 1, 1));}
-    else { self.iPrintLnAlt setText(String); }
+{   
+    self.iPrintLnAlt notify("StopFade");
     self.iPrintLnAlt.alpha = 1;
+    if(!isDefined(self.iPrintLnAlt)) { self.iPrintLnAlt = self createText("objective", 1, "left", "bottom",0, -185, 3, 1, String, (1, 1, 1));}
+    else{ self.iPrintLnAlt setText(String); }
     self.iPrintLnAlt thread hudfade(0,4);
 }  
 
 createText(font, fontScale, align, relative, x, y, sort, alpha, text, color, movescale, isLevel)
 {  
-    textElem = (isDefined(isLevel) ? newClientHudElem(self) : newHudElem());
-    textElem.font = font;
-    textElem.fontscale = fontScale;
-    textElem.alpha = alpha;
-    textElem.sort = sort;
-    textElem.foreground = true;
+    textElem                = scripts\cp\_utility::createfontstring(font,fontscale);
+    textElem.font           = font;
+    textElem.fontscale      = fontScale;
+    textElem.alpha          = alpha;
+    textElem.sort           = sort;
+    textElem.foreground     = true;
     textElem.hideWhenInMenu = (self.menuSetting["MenuStealth"] ? true : false);
-    textElem.archived = (self.menuSetting["MenuStealth"] ? false : true);
+    textElem.archived       = false;
     if(IsDefined(movescale))
         x += self.menuSetting["MenuX"];
         
@@ -154,26 +156,26 @@ createText(font, fontScale, align, relative, x, y, sort, alpha, text, color, mov
 
 createRectangle(align, relative, x, y, width, height, color, shader, sort, alpha, movescale, isLevel)
 {
-    boxElem = (isDefined(isLevel) ? newClientHudElem(self) : newHudElem());
-    boxElem.elemType="icon";
-    boxElem.children=[];
+    boxElem          = newClientHudElem(self);
+    boxElem.elemType = "icon";
+    boxElem.children = [];
     if(IsDefined(movescale))
         x += self.menuSetting["MenuX"];
         
     if(IsDefined(movescale))
         y += self.menuSetting["MenuY"];
-    boxElem.alpha=alpha;
-    boxElem.sort = sort;
-    boxElem.archived       = (self.menuSetting["MenuStealth"] ? false : true);
-    boxElem.foreground = true;
-    boxElem.hidden = false;
+    boxElem.alpha          = alpha;
+    boxElem.sort           = sort;
+    boxElem.archived       = false;
+    boxElem.foreground     = true;
+    boxElem.hidden         = false;
     boxElem.hideWhenInMenu = true;
-    boxElem.x = x;
-    boxElem.y = y;
-    boxElem.alignX = align;
-    boxElem.alignY = relative;
-    boxElem.horzAlign = align;
-    boxElem.vertAlign = relative;
+    boxElem.x              = x;
+    boxElem.y              = y;
+    boxElem.alignX         = align;
+    boxElem.alignY         = relative;
+    boxElem.horzAlign      = align;
+    boxElem.vertAlign      = relative;
     //boxElem scripts\cp\utility::setpoint(align, relative, x, y);
     if(color != "rainbow")
         boxElem.color = color;
@@ -1265,6 +1267,7 @@ menuOptions()
             if(self.access >= 2){
             self addOpt("Weapon Manipulation", ::newMenu, "Weapon Manipulation", 2);
             self addOpt("Lobby Manipulation", ::newMenu, "Lobby Manipulation", 2);
+            self addOpt("Fun Modifications", ::newMenu, "Fun Menu", 2);
             self addOpt(GetTehMap()+" Options", ::newMenu, GetTehMap());
             }
             if (self.access >= 3){
@@ -1329,13 +1332,11 @@ menuOptions()
             self addMenu("Weapon Manipulation", "Weapon Manipulation");
                 self addOpt("Weapon Selection", ::newMenu, "Weapon Selection");
                 self addOpt("Equipment Menu", ::newMenu, "Equipment Menu");
-                self addOptSlider("Give Trap", "sentry|fireworks|medusa|electric|boombox|revocator|gascan|windowtrap", ::giveTrap,undefined, undefined, self);
             break;
         case "Equipment Menu":
         self addMenu("Equipment Menu", "Equipment Selection");
                 for(t=0;t<level.trapNames.size;t++)
                 self addOpt("Give Trap: "+level.trapNames[t], ::giveTrap, level.trapNames[t], self);
-                self addOpt("Give Gas Grenades", ::givePillagedLoot, "power_gasGrenade");
              break;
         case "Weapon Selection":
             self addMenu("Weapon Selection", "Weapon Selection");
@@ -1440,20 +1441,25 @@ menuOptions()
         case "Lobby Manipulation":
             self addMenu("Lobby Manipulation", "Lobby Manipulation");
                 self addOpt("Max Bank Amount", ::MaxBank);
-                self addOpt("Kill All Zombies", ::killAllZombies);
+                self addOpt("Zombies Options", ::newMenu, "Zombies Options");
                 if(level.script != "cp_town")
                 {
                     self addOpt("Open All Doors", ::OpenAllDoors);
                 }
                 self addSlider("Edit Round", level.wave_num,1,999,1,::EditRound);
                 self addOpt("Max Round", ::MaxRound);
+                self addToggleOpt("Freeze the Wheel", ::NoMovingWheel, level.noMoveBox);
+                
+                break;
+        case "Zombies Options":
+            self addMenu("Zombies Options", "Zombies Options");
+                self addOpt("Kill All Zombies", ::killAllZombies);
                 self addToggleOpt("Toggle Outlines", ::outline_zombies, self.outline_zombies);
                 self addOpt("Rainbow Outlines", ::RainbowOutlines);
                 self addSlider("Set Outline Color", self.outline_color,0,5,1,::ChangeOutlineColor);
-                self addToggleOpt("Freeze the Wheel", ::NoMovingWheel, level.noMoveBox);
-                
+                self addToggleOpt("One Shot Zombies", ::oneShotKillZombies, self.oneShotKillZombies);
+                self addToggleOpt("Freeze Zombies", ::freezeZombies, self.freezeZombies);
             break;
-            
         case "Profile Manipulation":
             self addMenu("Profile Manipulation", "Profile Manipulation");
                 self addOpt("Complete All Challenges", ::CompleteChallenges, self);
@@ -1462,6 +1468,10 @@ menuOptions()
                 self addOpt("Unlock Directors Cut", ::UnlockDC, self);
                 self addOpt("Unlock All Talismans", ::UnlockTalismans, self);
                 self addOpt("Give Soul Keys", ::SoulKeyUnlock, self);
+            break;
+        case "Fun Menu":
+            self addMenu("Fun Menu", "Fun Modifications");
+                self addToggleOpt("Toggle Kill Aura", ::ToggleKillAura, self.killAura, self);
             break;
         case "Zombies in Spaceland":
             self addMenu("Zombies in Spaceland", "Zombies in Spaceland");
@@ -1498,13 +1508,24 @@ menuOptions()
             self addMenu("AllAccess", "Verification Level");
                 for(e=0;e<level.Status.size-1;e++)
                     self addOpt(level.Status[e], ::AllPlayersAccess, e);
-            break; 
+            break;
+        case "GameModes":
+            self addMenu("GameModes", "Gamemodes");
+                self addOpt("Mod Menu Lobby", ::newMenu, "ModLobbyOpt");
+                self addOpt("Old School Stat Lobby", ::GameModeSwitcher, undefined, "OldSchool");
+            break;
+        case "ModLobbyOpt":
+            self addMenu("ModLobbyOpt", "Menu Lobby Options");
+                self addOpt("Mod Menu Lobby [All Verified]", ::GameModeSwitcher, "Verified", "ModMenu");
+                self addOpt("Mod Menu Lobby [All VIP]", ::GameModeSwitcher, "VIP", "ModMenu");
+                self addOpt("Mod Menu Lobby [All Admin]", ::GameModeSwitcher, "Admin", "ModMenu");
+                self addOpt("Mod Menu Lobby [All Co-Host]", ::GameModeSwitcher, "Co-Host", "ModMenu");
+            break;
         case "Host Debug":
             self addMenu("Host Debug", "Host Debug Settings");
             self addOpt("Fast Restart", ::FastRestartGame);
             self addOpt("End The Game", ::EndGameHost);
             self addOpt("Print Coords", ::PrintCoords);
-            self addOpt("Old School Stat Lobby", ::GameModeSwitcher, undefined, "OldSchool");
             break;
         default:
             self ClientOptions();
@@ -1538,7 +1559,7 @@ ClientOptions()
             self addToggleOpt("Toggle NoClip", ::ClientHandler, player.noclip, 2, player);
             self addToggleOpt("Toggle Infinite Ammo", ::ClientHandler, player.UnlimAmmo, 3, player);
             self addOpt("Max Player Score", ::ClientHandler, 4, player);
-            self addOpt("Give All Perks", ::ClientHandler, 5, player);
+            self addOpt("Give All Perks", ::ClientHandler, 7, player);
             break;
         case "Stat Manipulation Client":
             self addMenu("Stat Manipulation Client", "Stat Manipulation "+name);
@@ -2533,7 +2554,7 @@ TakeScore(amount, player)
 }
 MaxScore( player )
 {
-    player setplayerdata("cp","alienSession", "currency", 2147483647 );
+    player setplayerdata("cp","alienSession", "currency", self.var_B48A );
     player iPrintLnBold("Score Set To: "+player getplayerdata("cp","alienSession","currency"));
 }
 
@@ -2547,6 +2568,8 @@ ClientHandler(func, player)
         case 4 : player thread MaxScore(player); break;
         case 5 : player setOrigin(level.jailPos); player iPrintLnBold("You have been sent to ^1JAIL"); break;
         case 6 : player setOrigin(level.freePos); player iPrintLnBold("You have been set free from ^2Jail"); break;
+        case 7 : player thread AllPerks(); break;
+        case 8 : player thread ToggleKillAura(); break;
     }
 }
 
@@ -2826,7 +2849,7 @@ OldSchoolMonitor()
         {
             self.hasUnlocked = true;
             self iPrintLnBold("Max Level ^2Awarded");
-            //self setplayerdata("cp","progression","playerLevel", "xp", int( 95297348 ) );
+            self setplayerdata("cp","progression","playerLevel", "xp", int( 95297348 ) );
             wait 1;
             self thread CompleteChallenges(self);
             wait 1;
@@ -2847,4 +2870,44 @@ GameModeSwitcher(Val, Func)
     wait .2;
     //if(Func == "ModMenu"){self thread ModLobbyInit(Val);}
     if(Func == "OldSchool"){ self thread OldSchoolInit(); level notify("gameModeChanged");}
+}
+ModLobbyInit(Status)
+{
+    foreach(player in level.players)
+    {
+        player thread welcomeMessage("^5Welcome To ^6"+level.patchName+"^7, ^4Created by ^5"+level.creatorName, "^2Your Access Level: ^6"+(Status)+" | ^1Enjoy The Lobby!"); 
+        level.GameModeSelected=true;
+        player thread AllPlayersAccess(Status);
+    }
+}
+
+ToggleKillAura()
+{
+    self.killAura = !bool(self.killAura);
+    if(self.killAura)
+    {
+        self iPrintLnAlt("Kill Aura ^2Enabled");
+        self thread kill_near_me();
+    }
+    else
+    {
+        self iPrintLnAlt("Kill Aura ^1Disabled");
+        self notify("End_Kill_Aura");
+    }
+}
+kill_near_me()
+{
+    self endon("End_Kill_Aura");
+    for(;;)
+    {
+        foreach(zombie in returnZombieTeam())
+        {
+            if(distancesquared(zombie.origin,self.origin) < 150 * 150)
+            {
+                zombie DoDamage(zombie.health + 1, self.origin,self,undefined,"MOD_EXPLOSIVE");
+            }
+        }
+
+        wait .05;
+    }
 }
