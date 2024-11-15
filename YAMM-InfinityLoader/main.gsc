@@ -1331,13 +1331,7 @@ menuOptions()
         case "Weapon Manipulation":
             self addMenu("Weapon Manipulation", "Weapon Manipulation");
                 self addOpt("Weapon Selection", ::newMenu, "Weapon Selection");
-                self addOpt("Equipment Menu", ::newMenu, "Equipment Menu");
             break;
-        case "Equipment Menu":
-        self addMenu("Equipment Menu", "Equipment Selection");
-                for(t=0;t<level.trapNames.size;t++)
-                self addOpt("Give Trap: "+level.trapNames[t], ::giveTrap, level.trapNames[t], self);
-             break;
         case "Weapon Selection":
             self addMenu("Weapon Selection", "Weapon Selection");
                 for(e=0;e<level.WeaponCategories.size;e++)
@@ -1573,8 +1567,6 @@ ClientOptions()
         case "Equip Weaps Client":
             self addMenu("Equip Weaps Client", "Equipment and Weapons");
                 self addOpt("Weapon Selection", ::newMenu, "Weaps Client");
-                for(t=0;t<level.trapNames.size;t++)
-                    self addOpt("Give Trap: "+level.trapNames[t], ::giveTrap, level.trapNames[t], player);
              break;
         case "Weaps Client":
             self addMenu("Weaps Client", "Weapon Selection");
@@ -1818,7 +1810,7 @@ Godmode()
 }
 killAllZombies()
 {
-    level notify("wave_complete");
+    level notify("wave_ended");
     zombies = scripts\cp\_agent_utils::func_7DB0("axis");
     if(isdefined(zombies))
     {
@@ -2712,37 +2704,6 @@ SoulKeyUnlock(player)
       player thread setPlayerAtPoint((-10250, 875, -1630), (0, 90, 0));
       player iPrintLnBold("Interact with the ^2Soul Jar^7 to Unlock Directors Cut ^5Permanently");
 }
-  
-giveTrap(trap, player)
-{
-    switch(trap)
-    {
-        case "Sentry Turret":
-            scripts\cp\_weapon_autosentry::func_82BA(0, player);
-            break;
-        case "Fireworks Trap":
-            scripts\cp\zombies\craftables\_fireworks_trap::func_82B5(0, player);
-            break;
-        case "Medusa Device":
-            scripts\cp\zombies\craftables\_zm_soul_collector::func_82B8(0, player);
-            break;
-        case "Electric Trap":
-            scripts\cp\zombies\craftables\_electric_trap::func_82BB(0, player);
-            break;
-        case "Boombox":
-            scripts\cp\zombies\craftables\_boombox::func_82B4(0, player);
-            break;
-        case "Revocator":
-            scripts\cp\zombies\craftables\_revocator::func_82B9(0, player);
-            break;
-        case "Kindle Pops":
-            scripts\cp\zombies\craftables\_gascan::func_82B6(0, player);
-            break;
-        case "Lazer Window Trap":
-            lib_0D43::func_DAFF(0, player);
-            break;
-    }
- }
     
 outline_zombies() {
     self.outline_zombies = !bool(self.outline_zombies);
@@ -2904,6 +2865,12 @@ kill_near_me()
         {
             if(distancesquared(zombie.origin,self.origin) < 150 * 150)
             {
+                if(level.script == "cp_disco"){
+                    playfx(level._effect["nunchuck_pap2"],zombie.origin + (0,0,30));
+                }
+                else{
+                    playfx(level._effect["zombie_freeze_shatter"],zombie.origin + (0,0,30));
+                }
                 zombie DoDamage(zombie.health + 1, self.origin,self,undefined,"MOD_EXPLOSIVE");
             }
         }
