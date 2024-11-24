@@ -8,6 +8,7 @@
 *    Date : 13/11/2024 01:35:11
 *
 */
+#include common_scripts\utility;
 #include scripts\cp\zombies\direct_boss_fight;
 #include scripts\cp\zombies\zombie_jukebox;
 //Preprocessor definition chaining
@@ -49,7 +50,7 @@ onPlayerSpawned()
             self freezeControls(false);
             self thread initializeSetup(5, self);
             self thread welcomeMessage("^4Welcome ^2"+self.name+" ^7to ^5"+level.patchName, "^4Your Access Level: ^2"+GetAccessName(self.access)+"^7, ^1Created by: ^5"+level.creatorName);
-            
+            wait 3;
         }
         else { self.access = 0;}
         self thread on_event();
@@ -101,7 +102,7 @@ InitializeMenu()
     level.SpacelandWeaps   = ["iw7_forgefreeze_zm+forgefreezealtfire", "iw7_dischord_zm", "iw7_facemelter_zm", "iw7_headcutter_zm", "iw7_shredder_zm", "iw7_spaceland_wmd"];
     level.SpacelandNames   = ["Forge Freeze", "Dischord", "Face Melter", "Head Cutter", "Shredder", "NX 2.0"];
     level.RaveWeaps        = ["iw7_golf_club_mp", "iw7_spiked_bat_mp", "iw7_two_headed_axe_mp", "iw7_machete_mp", "iw7_harpoon1_zm", "iw7_harpoon2_zm", "iw7_harpoon3_zm+akimbo", "iw7_harpoon4_zm"];
-    level.RaveNames        = ["Golf Club", "Spiked Bat", "2 Headed Axe", "Machete", "Harpoon Gun 1", "Harpoon Gun 2", "Harpoon Gun 3", "Harpoon Gun 4"];
+    level.RaveNames        = ["Golf Club", "Spiked Bat", "2 Headed Axe", "Machete", "Acid Rain", "Ben Franklin", "Trap o Matic", "Whirlwind EF5"];
     level.ShaolinWeaps     = ["iw7_katana_zm", "iw7_nunchucks_zm", "iw7_fists_zm_crane", "iw7_fists_zm_snake", "iw7_fists_zm_dragon", "iw7_fists_zm_tiger", "iw7_fists_zm_monkey"];
     level.ShaolinNames     = ["Katana", "Nunchucks", "Crane Chi", "Snake Chi", "Dragon Chi", "Tiger Chi", "Monkey Chi"];
     level.AttackWeaps      = ["iw7_cutie_zm"];
@@ -110,6 +111,14 @@ InitializeMenu()
     level.BeastNames       = ["Venom-X"];
     level.otherWeaps       = ["iw7_fists_zm", "iw7_entangler_zm"];
     level.OtherNames       = ["Fists", "Entangler"];
+    level.papCamoSL        = ["+camo1","+camo4"];
+    level.papCamoRR        = ["+camo204","+camo205"];
+    level.papCamoSS        = ["+camo211","+camo212"];
+    level.papCamoRT        = ["+camo92","+camo93"];
+    level.papCamoBB        = ["+camo32","+camo34"];
+    level.pickupLoot       = ["power_bioSpike","power_c4","power_clusterGrenade","power_concussionGrenade","power_frag","power_gasGrenade","power_semtex","power_splashGrenade"];
+    level.pickupLootName   = ["Bio Spikes","C4","Cluster Grenades","Concussion Grenades","Frag Grenades","Gas Grenades","Semtex Grenades", "Splash Grenades"];
+    level.pickupPowers     = ["power_speedBoost","power_teleport","power_transponder","power_cloak","power_barrier","power_mortarMount"];
     level.trapNames        = ["Sentry Turret","Fireworks Trap","Medusa Device","Electric Trap","Boombox","Revocator","Kindle Pops","Lazer Window Trap"];
     if(level.script == "cp_zmb"){ level.jailPos = (3356.53,-996.361, -195.873); level.freePos = (640.463,919.658,0.126336); level.EESong = "mus_pa_mw2_80s_cover";} else if(level.script == "cp_rave") { level.EESong = "mus_pa_rave_hidden_track"; } else if(level.script == "cp_disco") { level.EESong = "mus_pa_disco_hidden_track"; }
 }
@@ -138,13 +147,13 @@ createText(font, fontScale, align, relative, x, y, sort, alpha, text, color, mov
         
     if(IsDefined(movescale))
         y += self.menuSetting["MenuY"];
-    textElem.x = x;
-    textElem.y = y;
-    textElem.alignX = align;
-    textElem.alignY = relative;
+    textElem.x         = x;
+    textElem.y         = y;
+    textElem.alignX    = align;
+    textElem.alignY    = relative;
     textElem.horzAlign = align;
     textElem.vertAlign = relative;
-    //textElem scripts\cp\utility::setpoint(align, relative, x, y);//Doesn't seem to work? Sadge
+    //textElem scripts\cp\_utility::setpoint(align, relative, x, y);//works now, need to redo coords correctly
     if(color != "rainbow")
         textElem.color = color;
     else
@@ -169,14 +178,14 @@ createRectangle(align, relative, x, y, width, height, color, shader, sort, alpha
     boxElem.archived       = false;
     boxElem.foreground     = true;
     boxElem.hidden         = false;
-    boxElem.hideWhenInMenu = true;
+    boxElem.hideWhenInMenu = (self.menuSetting["MenuStealth"] ? true : false);
     boxElem.x              = x;
     boxElem.y              = y;
     boxElem.alignX         = align;
     boxElem.alignY         = relative;
     boxElem.horzAlign      = align;
     boxElem.vertAlign      = relative;
-    //boxElem scripts\cp\utility::setpoint(align, relative, x, y);
+    //boxElem scripts\cp\_utility::setpoint(align, relative, x, y);//works, need to redo coords for this
     if(color != "rainbow")
         boxElem.color = color;
     else
@@ -426,7 +435,7 @@ initializeSetup(access, player, allaccess)
         player.menuSetting["HUDEdit"] = true;
         player thread MenuLoad();
         player iPrintLn("You have Been Given "+GetAccessName(access));
-        //player thread PrintMenuControls();
+        player thread PrintMenuControls();
     }
 }
 
@@ -924,6 +933,7 @@ menuMonitor()
                     wait .2;
                 }
             }
+            wait .05;
         }
         wait .05;
     }
@@ -1274,7 +1284,8 @@ menuOptions()
             self addOpt("Clients [^2" + level.players.size + "^7]", ::newMenu, "Clients",4);
             self addOpt("All Clients", ::newMenu, "AllClients",4);
             }
-            if(self IsHost()){ self addOpt("Host Debug Menu", ::newMenu, "Host Debug");}
+            if(self IsHost()){ self addOpt("Host Debug Menu", ::newMenu, "Host Debug");
+            self addOpt("GameModes", ::newMenu, "GameModes");}
             break;
         case "Personal Modifications":
             self addMenu("Personal Modifications", "Personal Modifications");
@@ -1284,12 +1295,14 @@ menuOptions()
             self addOpt("Score Menu", ::newMenu, "Score Menu");
             self addOpt("Random Teleport", ::ActivateFAF, "anywhere_but_here", self);
             self addOpt("Give All Perks", ::AllPerks, self);
+            self addSlider("Edit Movement Speed", 0,0,15,1,::EditSpeed);
+            self addToggleOpt("Toggle Speed Change", ::SpeedToggle, self.speedToggle);
             break;
         case "Score Menu":
             self addMenu("Score Menu", "Score Menu");
-            self addSlider("Add Score", self getplayerdata("cp","alienSession","currency"), 0, 9999999, 1000, ::AddScore, undefined, undefined, self);
-            self addSlider("Remove Score", self getplayerdata("cp","alienSession","currency"), 0, 9999999, 1000, ::TakeScore, undefined, undefined, self);
-                self addOpt("Max Out Score", ::MaxScore, self);
+            self addSlider("Add Score", self getplayerdata("cp","alienSession","currency"), 0, self.var_B48A, 1000, ::AddScore, undefined, undefined, self);
+            self addSlider("Remove Score", self getplayerdata("cp","alienSession","currency"), 0, self.var_B48A, 1000, ::TakeScore, undefined, undefined, self);
+            self addOpt("Max Out Score", ::MaxScore, self);
             break;
         case "Menu Customisation":
             self addMenu("Menu Customisation", "Menu Customisation");
@@ -1331,6 +1344,12 @@ menuOptions()
         case "Weapon Manipulation":
             self addMenu("Weapon Manipulation", "Weapon Manipulation");
                 self addOpt("Weapon Selection", ::newMenu, "Weapon Selection");
+                self addOpt("Pillaged Loot", ::newMenu, "Pillaged Loot");
+            break;
+        case "Pillaged Loot":
+            self addMenu("Pillaged Loot", "Pillaged Loot");
+                for(i=0;i<level.pickupLootName.size;i++)
+                    self addOpt("Give "+level.pickupLootName[i], ::givePillagedLoot, level.pickupLoot[i]);
             break;
         case "Weapon Selection":
             self addMenu("Weapon Selection", "Weapon Selection");
@@ -1443,7 +1462,7 @@ menuOptions()
                 self addSlider("Edit Round", level.wave_num,1,999,1,::EditRound);
                 self addOpt("Max Round", ::MaxRound);
                 self addToggleOpt("Freeze the Wheel", ::NoMovingWheel, level.noMoveBox);
-                
+                self addToggleOpt("Toggle Force Host", ::ToggleForceHost, self.ForcingHost);
                 break;
         case "Zombies Options":
             self addMenu("Zombies Options", "Zombies Options");
@@ -1470,12 +1489,19 @@ menuOptions()
         case "Zombies in Spaceland":
             self addMenu("Zombies in Spaceland", "Zombies in Spaceland");
                 self addSlider("Give Tickets", 50,50,950, 50, ::GiveTickets);
+                self addOpt("Quest Options", ::newMenu, "SLQuests");
                 self addOpt("Trigger MW1 Song", ::PlayAudioToClients, "mus_pa_mw1_80s_cover");
                 self addOpt("Trigger MW2 Song", ::PlayAudioToClients, "mus_pa_mw2_80s_cover");
+                self addOpt("Activate Ghosts N Skulls", ::CompleteGnS);
+                self addOpt("Play Knight Rider", ::PlayAudioToClients, "mus_pa_sp_knightrider");
+                self addOpt("Play Scattered Lies", ::PlayAudioToClients, "mus_pa_final_hidden_track");
+            break;
+        case "SLQuests":
+            self addMenu("SLQuests", "Quest Options");
+                self addOptSlider("Grab Neil Part","Head|Battery|Firmware", ::GetNeilPart);
                 self addOpt("Grab SetiCom Parts", ::GrabSetiComParts);
                 self addOpt("Take the Seticom", ::GrabTheSeticom);
-                self addOpt("Activate Ghosts N Skulls", ::CompleteGnS);
-                self addOpt("Play Scattered Lies", ::PlayAudioToClients, "mus_pa_final_hidden_track");
+                self addOpt("Get The Speakers", ::GetThoseSpeakers);
             break;
         case "Rave in the Redwoods":
             self addMenu("Rave in the Redwoods", "Rave in the Redwoods");
@@ -1497,6 +1523,17 @@ menuOptions()
             self addMenu("Beast from Beyond", "Beast from Beyond");
                 self addOpt("Play Scattered Lies", ::PlayAudioToClients, "mus_pa_final_hidden_track");
                 self addOpt("Activate Ghosts N Skulls", ::CompleteGnS);
+            break;
+        case "AllClients":
+            self addMenu("AllClients", "All Client Options");
+                self addOpt("All God Mode", ::AllClientHandler, 1);
+                self addOpt("All No Clip", ::AllClientHandler, 2);
+                self addOpt("All Infinite Ammo", ::AllClientHandler, 3);
+                self addOpt("All Max Score", ::AllClientHander, 4);
+                self addOpt("Give everyone Perks", ::AllClientHandler, 5);
+                self addOpt("Give All Kill Aura", ::AllClientHandler, 6);
+                self addOpt("Send All To Jail", ::AllClientHandler, 7);
+                self addOpt("Free All from Jail", ::AllClientHandler, 8);
             break;
         case "AllAccess":
             self addMenu("AllAccess", "Verification Level");
@@ -1546,6 +1583,7 @@ ClientOptions()
             self addOpt("Stat Manipulation", ::newMenu, "Stat Manipulation Client");
             self addOpt("Trolling Options", ::newMenu, "Trolling Options");
             self addOpt("Equipment and Weapons", ::newMenu, "Equip Weaps Client");
+            self addOpt("Testing Keys", ::KeyGiving);
             break;
         case "Personal Modifications Client":
             self addMenu("Personal Modifications Client", "Personal Modifications "+Name);
@@ -1573,67 +1611,67 @@ ClientOptions()
                 for(e=0;e<level.WeaponCategories.size;e++)
                 self addOpt(level.WeaponCategories[e], ::newMenu, level.WeaponCategories[e] + " Client");
             break;
-            case "Assault Rifles Client":
-        self addMenu(level.WeaponCategories[0]+" Client", "Assault Rifles");
+        case "Assault Rifles Client":
+            self addMenu(level.WeaponCategories[0]+" Client", "Assault Rifles");
                 for(i=0;i<level.ARNames.size;i++){
                     self addOpt(level.ARNames[i], ::GiveWeaponToPlayer, level.Assault[i], player);
                 }
             break;        
-            case "Sub Machine Guns Client":
-        self addMenu(level.WeaponCategories[1]+" Client", "Sub Machine Guns");
+        case "Sub Machine Guns Client":
+            self addMenu(level.WeaponCategories[1]+" Client", "Sub Machine Guns");
                 for(i=0;i<level.SMGNames.size;i++){
                     self addOpt(level.SMGNames[i], ::GiveWeaponToPlayer, level.SMG[i], player);
                 }
             break;
-            case "Shotguns Client":
-        self addMenu(level.WeaponCategories[4]+" Client", "Shotguns");
+        case "Shotguns Client":
+            self addMenu(level.WeaponCategories[4]+" Client", "Shotguns");
                 for(i=0;i<level.ShotgunNames.size;i++){
                     self addOpt(level.ShotgunNames[i], ::GiveWeaponToPlayer, level.Shotguns[i], player);
                 }
             break;
-            case "Light Machine Guns Client":
-        self addMenu(level.WeaponCategories[2]+" Client", "Light Machine Guns");
+        case "Light Machine Guns Client":
+            self addMenu(level.WeaponCategories[2]+" Client", "Light Machine Guns");
                 for(i=0;i<level.LMGNames.size;i++){
                     self addOpt(level.LMGNames[i], ::GiveWeaponToPlayer, level.LMG[i], player);
                 }
             break;
-            case "Sniper Rifles Client":
-        self addMenu(level.WeaponCategories[3]+" Client", "Sniper Rifles");
+        case "Sniper Rifles Client":
+            self addMenu(level.WeaponCategories[3]+" Client", "Sniper Rifles");
                 for(i=0;i<level.SniperNames.size;i++){
                     self addOpt( level.SniperNames[i], ::GiveWeaponToPlayer, level.Snipers[i],player); 
                 }
             break;
-            case "Launchers Client":
-        self addMenu(level.WeaponCategories[6]+ " Client", "Launchers");
+        case "Launchers Client":
+            self addMenu(level.WeaponCategories[6]+ " Client", "Launchers");
                 for(i=0;i<level.LauncherNames.size;i++){
                     self addOpt( level.LauncherNames[i], ::GiveWeaponToPlayer, level.Launchers[i], player ); 
                 }
             break;
-            case "Pistols Client":
-        self addMenu(level.WeaponCategories[5]+" Client", "Pistols");
+        case "Pistols Client":
+            self addMenu(level.WeaponCategories[5]+" Client", "Pistols");
                 for(i=0;i<level.PistolNames.size;i++){
                     self addOpt( level.PistolNames[i], ::GiveWeaponToPlayer, level.Pistols[i], player );
                     }
             break;
-            case "Classic Weapons Client":
-        self addMenu(level.WeaponCategories[7]+"Client", "Classic Weapons");
+        case "Classic Weapons Client":
+            self addMenu(level.WeaponCategories[7]+"Client", "Classic Weapons");
                 for(i=0;i<level.ClassicNames.size;i++){
                     self addOpt(level.ClassicNames[i], ::GiveWeaponToPlayer, level.Classics[i], player);
                 }
             break;
-            case "Melee Weapons Client":
-        self addMenu(level.WeaponCategories[8]+" Client", "Melee Weapons");
+        case "Melee Weapons Client":
+            self addMenu(level.WeaponCategories[8]+" Client", "Melee Weapons");
             for(i=0;i<level.MeleeNames.size;i++){
                 self addOpt(level.MeleeNames[i], ::GiveWeaponToPlayer, level.Melee[i], player);
             }
             break;
-            case "Specialist Weapons Client":
-        self addMenu(level.WeaponCategories[9] + "Client", "Specialist Weapons");
+        case "Specialist Weapons Client":
+            self addMenu(level.WeaponCategories[9] + "Client", "Specialist Weapons");
                 for(i=0;i<level.SpecialNames.size;i++){
                     self addOpt(level.SpecialNames[i], ::GiveWeaponToPlayer, level.Specials[i], player);
                 }
             break;
-            case "Map Specific Weapons Client":
+        case "Map Specific Weapons Client":
             self addMenu(level.WeaponCategories[10] +" Client", "Map Specific Weapons");
                 if(level.mapName == "cp_zmb"){
                     for(i=0;i<level.SpacelandNames.size;i++){
@@ -1662,7 +1700,7 @@ ClientOptions()
                     }
                 }
             break;
-            case "Other Weapons Client":
+        case "Other Weapons Client":
             self addMenu(level.WeaponCategories[11]+ " Client", "Other Weapons");
                 for(i=0;i<level.OtherNames.size;i++){
                     self addOpt(level.OtherNames[i], ::GiveWeaponToPlayer, level.otherWeaps[i], player);
@@ -1672,6 +1710,7 @@ ClientOptions()
             self addMenu("Trolling Options", "Trolling Options");
             self addOpt("Send Player To Jail", ::ClientHandler, 5, player);
             self addOpt("Set Free From Jail", ::ClientHandler, 6, player);
+            self addOpt("Drop Player Weapon", ::dropweapon, player);
             break;
         case "PAccess":
             self addMenu("PAccess", Name+" Verification");
@@ -1694,6 +1733,7 @@ FastRestartGame()
 {
     map_restart(0);
 }
+
 
 welcomeMessage(message, message2) {
     if (isDefined(self.welcomeMessage))
@@ -1728,7 +1768,7 @@ welcomeMessage(message, message2) {
 test()
 {
     
-    self iPrintLnBold("Testing");
+    self iPrintLnAlt("Testing");
 }
 
 CompleteGnS()
@@ -1747,7 +1787,7 @@ ActivateFAF(card, player)
 MaxBank()
 {
     level.var_2416 = 2147483647;
-    self iPrintLnBold("The Bank is ^2BURSTING! ^0Balance Set to: ^2$2147483647");
+    self iPrintLnAlt("The Bank is ^2BURSTING! ^0Balance Set to: ^2$2147483647");
 }
 
 
@@ -1765,7 +1805,7 @@ PrintMenuControls()
     {
         for(i=0;i<5;i++)
         {
-            self iPrintLnBold(info[i]);
+            self iPrintLnAlt(info[i]);
             wait 5;
         }
         wait .2;
@@ -1784,9 +1824,9 @@ returnZombieTeam()
 }
 EditRound(newRoundNum)
 {
-    if(level.wave_num < 1) {self iPrintLnBold("Fool, wait for the round to start"); return;}
+    if(level.wave_num < 1) {self iPrintLnAlt("Fool, wait for the round to start"); return;}
     else{
-        self iPrintLnBold("Round Changing to: "+newRoundNum+" in TWO SECONDS!");
+        self iPrintLnAlt("Round Changing to: "+newRoundNum+" in TWO SECONDS!");
         wait 2;
         level.wave_num = newRoundNum;
         thread killAllZombies();
@@ -1797,10 +1837,10 @@ Godmode()
     self.godmode = !bool(self.godmode);
     if(self.godmode)
     {
-        self iPrintLnBold("Godmode ^2Enabled");
+        self iPrintLnAlt("Godmode ^2Enabled");
     }
     else{
-        self iPrintLnBold("Godmode ^1Disabled");
+        self iPrintLnAlt("Godmode ^1Disabled");
     }
     while(self.godmode)
     {
@@ -1810,7 +1850,7 @@ Godmode()
 }
 killAllZombies()
 {
-    level notify("wave_ended");
+    level notify("next_wave_notify");
     zombies = scripts\cp\_agent_utils::func_7DB0("axis");
     if(isdefined(zombies))
     {
@@ -1818,15 +1858,15 @@ killAllZombies()
             zombies[i] DoDamage(zombies[i].health + 1, zombies[i].origin);
         wait 1;
     }
-    self iPrintLnBold("All Zombies ^2Killed");
+    self iPrintLnAlt("All Zombies ^2Killed");
 }
 
 MaxRound()
 {
-    if(level.wave_num < 1) {self iPrintLnBold("Fool, wait for the round to start"); return;}
+    if(level.wave_num < 1) {self iPrintLnAlt("Fool, wait for the round to start"); return;}
     else{
         level notify("wave_complete");
-        self iPrintLnBold("Round Changing to: 2147483647 in TWO SECONDS!");
+        self iPrintLnAlt("Round Changing to: 2147483647 in TWO SECONDS!");
         wait 2;
         level.wave_num = 2147483646;
         thread killAllZombies();
@@ -1858,14 +1898,14 @@ NoMovingWheel()
 {
     level.noMoveBox = !bool(level.noMoveBox);
     if(level.NoMoveBox){
-        self iPrintLnBold("Wheel no Move ^2Enabled");
+        self iPrintLnAlt("Wheel no Move ^2Enabled");
         self thread LoopBox();
     }
     else
     {
         self iPrintLn("Wheel no Move ^1Disabled");
         level.var_B162  = 1;
-        level.var_13D01 = 4;
+        level.var_13D01 = 4;//set to 4 so it moves next spin
         level notify("stop_box");
     }
 }
@@ -1876,17 +1916,17 @@ LoopBox()
     self endon("stop_box");
     for(;;)
     {
-        level.var_13D01 = 0;
+        level.var_13D01 = 0;//set box spins at 0, since the check runs if > than 4 spins took place.
         wait 1;
     }
 }
 no_clip() {
     self.noclip = !bool(self.noclip);
     if(self.noclip) {
-        self iPrintLnBold("No Clip [^2ON^7]");
+        self iPrintLnAlt("No Clip [^2ON^7]");
         thread UpdateSessionState("spectator");
     } else {
-    self iPrintLnBold("No Clip [^1OFF^7]");
+    self iPrintLnAlt("No Clip [^1OFF^7]");
     thread UpdateSessionState("playing");
     }
 }
@@ -1937,7 +1977,7 @@ teleportZombiesToMe()
 GiveTickets(Amount)
 {
     self scripts\cp\zombies\arcade_game_utility::func_8317(self, Amount);
-    self iPrintLnBold("Awarded ^1"+amount+" Tickets");
+    self iPrintLnAlt("Awarded ^1"+amount+" Tickets");
 }   
 
 OpenAllDoors()
@@ -1962,7 +2002,13 @@ PlayAudioToClients(audioFile)
 {
     foreach(player in level.players)
     {
-        thread force_song((649,683,254),audioFile);
+        if(level.script == "cp_zmb")
+        { 
+            level thread [[level.force_song_func]](undefined,audioFile,undefined,undefined,undefined,undefined); 
+        }
+        else{
+            level thread force_song((649,683,254),audioFile);
+        }
     }
 }
 
@@ -2361,10 +2407,110 @@ pick_up_djquest_part(tagName,quest_part)
     tagName.part_model delete();
     level set_quest_icon(var1);
 }
+has_zombie_perk(param_00)
+{
+    if(!isdefined(self.zombies_perks))
+    {
+        return 0;
+    }
 
+    return istrue(self.zombies_perks[param_00]);
+}
 GiveWeaponToPlayer(weapon, player) {
-    if(player getCurrentWeapon() != weapon && player getWeaponsListPrimaries()[1] != weapon && player getWeaponsListPrimaries()[2] != weapon && player getWeaponsListPrimaries()[3] != weapon&& player getWeaponsListPrimaries()[4] != weapon) {
+    if(isDefined(self.give_packed_weapon) && self.give_packed_weapon == 1 || isDefined(self.give_double_packed_weapon) && self.give_double_packed_weapon == 1)
+    {
+        papText  = undefined;
+        papCamo  = undefined;
+        papLevel = undefined;
+        if(self.give_packed_weapon == 1){
+            papText = "pap1";
+            if(level.script == "cp_zmb"){ papCamo ="+camo1";}else if(level.script == "cp_rave") { papCamo = "+camo204";} else if(level.script == "cp_disco"){ papCamo = "+camo211";} else if(level.script == "cp_town"){ papCamo = "+camo92";} else if(level.script == "cp_final"){ papCamo = "+camo32";}
+            papLevel = "1";
+        }
+        else if(self.give_double_packed_weapon == 1)
+        {
+            papText = "pap2";
+            if(level.script == "cp_zmb"){ papCamo ="+camo4";}else if(level.script == "cp_rave") { papCamo = "+camo205";} else if(level.script == "cp_disco"){ papCamo = "+camo212";} else if(level.script == "cp_town"){ papCamo = "+camo93";} else if(level.script == "cp_final"){ papCamo = "+camo34";}
+            papLevel = "2";
+        }
+        if(weapon == "iw7_axe_zm") 
+        {
+            weapon += "_pap" + papLevel + "+axe" + papText;
+        } 
+        else if(weapon == "iw7_dischord_zm") 
+        {
+            weapon += "_pap1+dischordpap1+camo20";
+        } 
+        else if(weapon == "iw7_facemelter_zm") 
+        {
+            weapon += "_pap1+fmpap1+camo22";
+        } 
+        else if(weapon == "iw7_headcutter_zm") 
+        {
+            weapon += "_pap1+hcpap1+camo21";
+        } 
+        else if(weapon == "iw7_shredder_zm") 
+        {
+            weapon += "_pap1+shredderpap1+camo23";
+        } 
+        else if(weapon == "iw7_katana_zm") 
+        {
+            weapon += "_pap" + papLevel + "+camo222";
+        } 
+        else if(weapon == "iw7_nunchucks_zm") 
+        {
+            weapon += "_pap" + papLevel + "+camo222";
+        } 
+        else if(weapon == "iw7_forgefreeze_zm+forgefreezealtfire") 
+        {
+            weapon += "+freeze" + papText;
+        } 
+        else if(weapon == "iw7_spaceland_wmd" || weapon == "iw7_fists_zm" || weapon == "iw7_entangler_zm" || weapon == "iw7_atomizer_mp" || weapon == "iw7_penetrationrail_mp+penetrationrailscope" || weapon == "iw7_steeldragon_mp" || weapon == "iw7_claw_mp" || weapon == "iw7_blackholegun_mp+blackholegunscope" || weapon == "iw7_cutie_zm") 
+        {
         
+        } 
+        else 
+        {
+            weapon = build_custom_weapon(weapon, papCamo, papText);
+        }
+    } 
+    else 
+    {
+        switch(weapon) {
+            case "iw7_axe_zm":
+            case "iw7_dischord_zm":
+            case "iw7_facemelter_zm":
+            case "iw7_headcutter_zm":
+            case "iw7_shredder_zm":
+            case "iw7_golf_club_mp":
+            case "iw7_spiked_bat_mp":
+            case "iw7_two_headed_axe_mp":
+            case "iw7_machete_mp":
+            case "iw7_harpoon1_zm":
+            case "iw7_harpoon2_zm":
+            case "iw7_harpoon3_zm+akimbo":
+            case "iw7_harpoon4_zm":
+            case "iw7_katana_zm":
+            case "iw7_nunchucks_zm":
+            case "iw7_venomx_zm":
+            case "iw7_forgefreeze_zm+forgefreezealtfire":
+            case "iw7_spaceland_wmd":
+            case "iw7_cutie_zm":
+            case "iw7_fists_zm":
+            case "iw7_entangler_zm":
+            case "iw7_atomizer_mp":
+            case "iw7_penetrationrail_mp+penetrationrailscope":
+            case "iw7_steeldragon_mp":
+            case "iw7_claw_mp":
+            case "iw7_blackholegun_mp+blackholegunscope":
+                break;
+            default:
+                weapon = build_custom_weapon(weapon, undefined, undefined);
+        }
+    }
+    if(player getCurrentWeapon() != weapon && player getWeaponsListPrimaries()[1] != weapon && player getWeaponsListPrimaries()[2] != weapon && player getWeaponsListPrimaries()[3] != weapon&& player getWeaponsListPrimaries()[4] != weapon) {
+        if(self has_zombie_perk("perk_machine_more")) maxWeapons = 4; else maxWeapons = 3;
+        if(self getWeaponsListPrimaries().size >= maxWeapons) self takeWeapon(self getCurrentWeapon());
         if(weapon == "iw7_spaceland_wmd" || weapon == "iw7_fists_zm" || weapon == "iw7_entangler_zm" || weapon == "iw7_atomizer_mp" || weapon == "iw7_penetrationrail_mp+penetrationrailscope" || weapon == "iw7_steeldragon_mp" || weapon == "iw7_claw_mp" || weapon == "iw7_blackholegun_mp+blackholegunscope" || weapon == "iw7_cutie_zm") {
             player giveWeapon(weapon);
             player switchToWeapon(weapon);
@@ -2395,10 +2541,10 @@ GiveWeaponToPlayer(weapon, player) {
 ToggleAmmo() {
     self.UnlimAmmo = !bool(self.UnlimAmmo);
     if(self.UnlimAmmo) {
-        self iPrintLnBold("Infinite Ammo [^2ON^7]");
+        self iPrintLnAlt("Infinite Ammo [^2ON^7]");
         enable_infinite_ammo(self.UnlimAmmo);
     } else {
-        self iPrintLnBold("Infinite Ammo [^1OFF^7]");
+        self iPrintLnAlt("Infinite Ammo [^1OFF^7]");
         enable_infinite_ammo(self.UnlimAmmo);
     }
     while (self.UnlimAmmo)
@@ -2465,7 +2611,7 @@ CompleteChallenges(player)
             wait 0.01;
         }
     }
-    player iPrintLnBold("Hey, you just got ^2UNLOCK ALL");
+    player iPrintLnAlt("Hey, you just got ^2UNLOCK ALL");
 }
 
 CompleteActiveContracts(player)
@@ -2492,7 +2638,7 @@ CompleteActiveContracts(player)
         
         wait 0.01;
     }
-    player iPrintLnBold("^2Your Contracts are now Complete. Sweet Keys and Salvage");
+    player iPrintLnAlt("^2Your Contracts are now Complete. Sweet Keys and Salvage");
 }
 
 SetPlayerRank(rank, player)
@@ -2502,13 +2648,13 @@ SetPlayerRank(rank, player)
         table = "cp/zombies/rankTable.csv";
     
     player SetPlayerData(mode, "progression", "playerLevel", "xp", Int(TableLookup(table, 0, rank, (rank == Int(TableLookup(table, 0, "maxrank", 1))) ? 7 : 2)));
-    player iPrintLnBold("You are now Level "+rank);
+    player iPrintLnAlt("You are now Level "+rank);
 }
 
 SetPlayerPrestige(prestige, player)
 {
     player SetPlayerData("cp", "progression", "playerLevel", "prestige", prestige);
-    player iPrintLnBold("You are now Prestige "+prestige);
+    player iPrintLnAlt("You are now Prestige "+prestige);
 }
 
 SetPlayerMaxWeaponRanks(player)
@@ -2531,23 +2677,23 @@ SetPlayerMaxWeaponRanks(player)
 UnlockDC(player)
 {
     player setplayerdata("cp","dc", 1);
-    self iprintlnbold("^2Director's cut given to "+player.name);
+    self iPrintLnAlt("^2Director's cut given to "+player.name);
 }
  
 AddScore(amount, player)
 {
     player setplayerdata("cp","alienSession", "currency", player getplayerdata("cp","alienSession","currency") + int(amount));
-    player iPrintLnBold("Score Set To: "+player getplayerdata("cp","alienSession","currency"));
+    player iPrintLnAlt("Score Set To: "+player getplayerdata("cp","alienSession","currency"));
 }
 TakeScore(amount, player)
 {
     player setplayerdata("cp","alienSession", "currency", player getplayerdata("cp","alienSession","currency") - int(amount) );
-    player iPrintLnBold("Score Set To: "+player getplayerdata("cp","alienSession","currency"));
+    player iPrintLnAlt("Score Set To: "+player getplayerdata("cp","alienSession","currency"));
 }
 MaxScore( player )
 {
     player setplayerdata("cp","alienSession", "currency", self.var_B48A );
-    player iPrintLnBold("Score Set To: "+player getplayerdata("cp","alienSession","currency"));
+    player iPrintLnAlt("Score Set To: "+player getplayerdata("cp","alienSession","currency"));
 }
 
 ClientHandler(func, player)
@@ -2558,16 +2704,37 @@ ClientHandler(func, player)
         case 2 : player thread no_clip(); break;
         case 3 : player thread ToggleAmmo(); break;
         case 4 : player thread MaxScore(player); break;
-        case 5 : player setOrigin(level.jailPos); player iPrintLnBold("You have been sent to ^1JAIL"); break;
-        case 6 : player setOrigin(level.freePos); player iPrintLnBold("You have been set free from ^2Jail"); break;
+        case 5 : player setOrigin(level.jailPos); player iPrintLnAlt("You have been sent to ^1JAIL"); break;
+        case 6 : player setOrigin(level.freePos); player iPrintLnAlt("You have been set free from ^2Jail"); break;
         case 7 : player thread AllPerks(); break;
         case 8 : player thread ToggleKillAura(); break;
     }
+        wait .05;
 }
 
+AllClientHandler(state)
+{
+    foreach(client in level.players)
+    {
+        if(client isHost()){}//don't activate for the host
+        else
+        switch(state)
+        {
+            case 1 : client thread Godmode(); break;
+            case 2 : client thread no_clip(); break;
+            case 3 : client thread ToggleAmmo(); break;
+            case 4 : client thread MaxScore(client); break;
+            case 5 : client thread AllPerks(); break;
+            case 6 : client thread ToggleKillAura(); break;
+            case 7 : client setOrigin(level.jailPos); client iPrintLnAlt("^1You have been sent to JAIL"); break;
+            case 8 : client setOrigin(level.freePos); client iPrintLnAlt("^2You have been set free from JAIL"); break;
+        }
+        wait .05;
+    }
+}
 PrintCoords()
 {
-    self iPrintLnBold("Current Coords: "+self.origin);
+    self iPrintLnAlt("Current Coords: "+self.origin);
 }
 
 getstructarray(param_00,param_01)
@@ -2699,19 +2866,19 @@ SoulKeyUnlock(player)
       player setplayerdata("cp","haveSoulKeys","soul_key_3",1);
       player setplayerdata("cp","haveSoulKeys","soul_key_4",1);
       player setplayerdata("cp","haveSoulKeys","soul_key_5",1);
-      player iprintlnBold("You Now have ^2ALL Soul Keys");
+      player iPrintLnAlt("You Now have ^2ALL Soul Keys");
       wait 1;
       player thread setPlayerAtPoint((-10250, 875, -1630), (0, 90, 0));
-      player iPrintLnBold("Interact with the ^2Soul Jar^7 to Unlock Directors Cut ^5Permanently");
+      player iPrintLnAlt("Interact with the ^2Soul Jar^7 to Unlock Directors Cut ^5Permanently");
 }
     
 outline_zombies() {
     self.outline_zombies = !bool(self.outline_zombies);
     if(self.outline_zombies) {
-        self iPrintlnBold("Zombie Outlines [^2ON^7]");
+        self iPrintlnAlt("Zombie Outlines [^2ON^7]");
         outline_zombies_loop();
     } else {
-    self iPrintlnBold("Zombie Outlines [^1OFF^7]");
+    self iPrintLnAlt("Zombie Outlines [^1OFF^7]");
         self notify("stop_outline_zombies");
         foreach(zombie in returnZombieTeam()) {
             scripts\cp\_outline::func_6221(zombie, level.players);
@@ -2753,24 +2920,24 @@ RainbowOutlines()
     for(;;)
     {
         self set_outline_color(0);
-        wait 1.5;
+        wait 1;
         self set_outline_color(1);
-        wait 1.5;
+        wait 1;
         self set_outline_color(2);
-        wait 1.5;
+        wait 1;
         self set_outline_color(3);
-        wait 1.5;
+        wait 1;
         self set_outline_color(4);
-        wait 1.5;
+        wait 1;
         self set_outline_color(5);
-        wait 1.5;
+        wait 1;
     }
 }
 
 AllPerks()
 {
     self thread scripts\cp\maps\cp_zmb\cp_zmb_ghost_wave::func_5FB7(self);
-    self iprintlnbold("^2All perks have been given");
+    self iPrintLnAlt("^2All perks have been given");
 }
 
 givePillagedLoot( equipment )
@@ -2798,18 +2965,18 @@ OldSchoolMonitor()
     self endon("disconnect");
     self endon("game_ended");
     
-    self PlayLocalSound(level.EESong);
+    self thread PlayAudioToClients(level.EESong);
     self.hasUnlocked = false;
     self thread welcomeMessage("^4Old School ^3Prestige Lobby", "^5Made By ^6"+level.creatorName);
     wait 2;
-    self iPrintLnBold("^2Get a Kill to get ^2Max Level ^1And ^2All Unlocks");
+    self iPrintLnAlt("^2Get a Kill to get ^2Max Level ^1And ^2All Unlocks");
     for(;;)
     {
         self waittill("zombie_killed");
         if(!self isHost() && self.hasUnlocked == false)
         {
             self.hasUnlocked = true;
-            self iPrintLnBold("Max Level ^2Awarded");
+            self iPrintLnAlt("Max Level ^2Awarded");
             self setplayerdata("cp","progression","playerLevel", "xp", int( 95297348 ) );
             wait 1;
             self thread CompleteChallenges(self);
@@ -2829,7 +2996,7 @@ OldSchoolMonitor()
 GameModeSwitcher(Val, Func)
 {
     wait .2;
-    //if(Func == "ModMenu"){self thread ModLobbyInit(Val);}
+    if(Func == "ModMenu"){self thread ModLobbyInit(Val);}
     if(Func == "OldSchool"){ self thread OldSchoolInit(); level notify("gameModeChanged");}
 }
 ModLobbyInit(Status)
@@ -2838,6 +3005,8 @@ ModLobbyInit(Status)
     {
         player thread welcomeMessage("^5Welcome To ^6"+level.patchName+"^7, ^4Created by ^5"+level.creatorName, "^2Your Access Level: ^6"+(Status)+" | ^1Enjoy The Lobby!"); 
         level.GameModeSelected=true;
+        level thread OpenAllDoors();
+        player thread PlayAudioToClients(level.EESong);
         player thread AllPlayersAccess(Status);
     }
 }
@@ -2877,4 +3046,169 @@ kill_near_me()
 
         wait .05;
     }
+}
+
+remove_from_current_interaction_list(item)
+{
+    if(func_2286(level.current_interaction_structs,item))
+    {
+        level.current_interaction_structs = func_22A9(level.current_interaction_structs,item);
+    }
+}
+
+GetNeilPart(partNum)
+{
+    switch(partNum)
+    {
+        case 0 : self playlocalsound("neil_part_pickup"); remove_from_current_interaction_list(level.var_BEC5);level.var_BEC5.var_BEC5 delete();level.var_BEC7 = 1;set_quest_icon(7); break;
+        case 1 : self playLocalSound("neil_part_pickup"); playfx(level._effect["souvenir_pickup"],level.var_BEAE.part.origin);remove_from_current_interaction_list(level.var_BEAE);level.var_BEAE.part delete();level.var_BEB0 = 1; set_quest_icon(8); break;
+        case 2 : self playlocalsound("neil_part_pickup");playfx(level._effect["souvenir_pickup"],level.var_BEC1.part.origin);remove_from_current_interaction_list(level.var_BEC1);level.var_BEC1.part delete();level.var_BEC3 = 1;set_quest_icon(9); break;
+    }
+}
+func_22A9(param_00,param_01)
+{
+    var_02 = [];
+    foreach(var_04 in param_00)
+    {
+        if(var_04 != param_01)
+        {
+            var_02[var_02.size] = var_04;
+        }
+    }
+
+    return var_02;
+}
+
+GetThoseSpeakers()
+{
+    if(isdefined(level.current_speaker))
+    {
+        level.current_speaker = undefined;
+    }
+
+    foreach(var_04 in level.players)
+    {
+        var_04 notify("speaker_defense_completed");
+        level notify("speaker_defense_completed");
+    }
+    flag_set("dj_request_defense_done");
+    foreach(var_01 in level.players)
+    {
+        var_01 setclientomnvar("zm_special_item",5);
+    }
+    flag_set("tone_generators_given");
+}
+
+ToggleForceHost()
+{
+    self.ForcingHost = !bool(self.ForcingHost);
+    if(self.ForcingHost)
+    {
+        SetDvar("lobbySearchListenCountries", "0,103,6,5,8,13,16,23,25,32,34,24,37,42,44,50,71,74,76,75,82,84,88,31,90,18,35");
+        SetDvar("excellentPing", 3);
+        SetDvar("goodPing", 4);
+        SetDvar("terriblePing", 5);
+        SetDvar("migration_forceHost", 1);
+        SetDvar("migration_minclientcount", 12);
+        SetDvar("party_connectToOthers", 0);
+        SetDvar("party_dedicatedOnly", 0);
+        SetDvar("party_dedicatedMergeMinPlayers", 12);
+        SetDvar("party_forceMigrateAfterRound", 0);
+        SetDvar("party_forceMigrateOnMatchStartRegression", 0);
+        SetDvar("party_joinInProgressAllowed", 1);
+        SetDvar("allowAllNAT", 1);
+        SetDvar("party_keepPartyAliveWhileMatchmaking", 1);
+        SetDvar("party_mergingEnabled", 0);
+        SetDvar("party_neverJoinRecent", 1);
+        SetDvar("party_readyPercentRequired", .25);
+        SetDvar("partyMigrate_disabled", 1);
+        self iPrintLnAlt("Force Host ^2Enabled");
+    }
+    else
+    {
+        SetDvar("lobbySearchListenCountries", "");
+        SetDvar("excellentPing", 30);
+        SetDvar("goodPing", 100);
+        SetDvar("terriblePing", 500);
+        SetDvar("migration_forceHost", 0);
+        SetDvar("migration_minclientcount", 2);
+        SetDvar("party_connectToOthers", 1);
+        SetDvar("party_dedicatedOnly", 0);
+        SetDvar("party_dedicatedMergeMinPlayers", 2);
+        SetDvar("party_forceMigrateAfterRound", 0);
+        SetDvar("party_forceMigrateOnMatchStartRegression", 0);
+        SetDvar("party_joinInProgressAllowed", 1);
+        SetDvar("allowAllNAT", 1);
+        SetDvar("party_keepPartyAliveWhileMatchmaking", 1);
+        SetDvar("party_mergingEnabled", 1);
+        SetDvar("party_neverJoinRecent", 0);
+        SetDvar("partyMigrate_disabled", 0);
+        self iPrintLnAlt("Force Host ^1Disabled");
+    }
+}
+
+SpeedToggle()//per player speed
+{
+    self.speedToggle = !bool(self.speedToggle);
+    if(self.speedToggle){
+        self iPrintLnAlt("Speed Toggle Enabled");
+        self thread MonitorSpeed();//have to do this cause the game resets movespeedscale on frames
+    }
+    else{
+        self IprintLnAlt("Speed Toggle ^1Disabled");
+        self notify("end_speed");
+    }
+}
+
+EditSpeed(speed)
+{
+    if(!isDefined(self.speedValue)) self.speedValue = 1;
+    self.speedValue = speed;
+    self iPrintLnAlt("Player Speed Set to "+speed);
+}
+MonitorSpeed()
+{
+    self endon("disconnect");
+    self endon("end_speed");
+    if(!isDefined(self.speedValue)) self.speedValue = 1;
+    for(;;)
+    {
+        self setmovespeedscale(self.speedValue);//have to loop since speed resets per frames
+        wait 1;
+    }
+}
+
+dropweapon(player)
+{
+    player method_80B8(player getcurrentweapon());//method_80B8 = DropItem
+    player iPrintLnAlt("^2Oops, you ^1Dropped ^2Something");
+}
+
+KeyGiving()
+{
+    self setplayerdata("cp","alienSession","team_shots",999999);
+    self setplayerdata("cp","alienSession","team_kills",999999);
+    self setplayerdata("cp","alienSession","team_hives",999999);
+    self setplayerdata("cp","alienSession","downed",999999);
+    self setplayerdata("cp","alienSession","hivesDestroyed",999999);
+    self setplayerdata("cp","alienSession","prestigenerfs",0);
+    self setplayerdata("cp","alienSession","repairs",9999);
+    self setplayerdata("cp","alienSession","drillPlants",99999);
+    self setplayerdata("cp","alienSession","deployables",9999);
+    self setplayerdata("cp","alienSession","challengesCompleted",15);
+    self setplayerdata("cp","alienSession","challengesAttempted",15);
+    self setplayerdata("cp","alienSession","trapKills",9999);
+    self setplayerdata("cp","alienSession","currencyTotal",8888888);
+    self setplayerdata("cp","alienSession","currencySpent",9999999);
+    self setplayerdata("cp","alienSession","kills",99999);
+    self setplayerdata("cp","alienSession","revives",99999);
+    self setplayerdata("cp","alienSession","time",9999999);
+    self setplayerdata("cp","alienSession","score",9999999);
+    self setplayerdata("cp","alienSession","shots",99999);
+    self setplayerdata("cp","alienSession","last_stand_count",1);
+    self setplayerdata("cp","alienSession","deaths",0);
+    self setplayerdata("cp","alienSession","headShots",99999);
+    self setplayerdata("cp","alienSession","hits",999999999);
+    self setplayerdata("cp","alienSession","resources",0);
+    self setplayerdata("cp","alienSession","waveNum",150);
 }
