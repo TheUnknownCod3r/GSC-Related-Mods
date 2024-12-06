@@ -105,8 +105,8 @@ InitializeMenu()
     level.RaveNames        = ["Golf Club", "Spiked Bat", "2 Headed Axe", "Machete", "Acid Rain", "Ben Franklin", "Trap o Matic", "Whirlwind EF5"];
     level.ShaolinWeaps     = ["iw7_katana_zm", "iw7_nunchucks_zm", "iw7_fists_zm_crane", "iw7_fists_zm_snake", "iw7_fists_zm_dragon", "iw7_fists_zm_tiger", "iw7_fists_zm_monkey"];
     level.ShaolinNames     = ["Katana", "Nunchucks", "Crane Chi", "Snake Chi", "Dragon Chi", "Tiger Chi", "Monkey Chi"];
-    level.AttackWeaps      = ["iw7_cutie_zm"];
-    level.AttackNames      = ["Modular Atomic Disintegrator"];
+    level.AttackWeaps      = ["iw7_cutie_zm", "iw7_knife_zm_crowbar","iw7_fists_zm_cleaver"];
+    level.AttackNames      = ["Modular Atomic Disintegrator", "Crowbar", "Cleaver"];
     level.BeastWeaps       = ["iw7_venomx_zm"];                                   
     level.BeastNames       = ["Venom-X"];
     level.otherWeaps       = ["iw7_fists_zm", "iw7_entangler_zm"];
@@ -1457,7 +1457,8 @@ menuOptions()
                 self addOpt("Zombies Options", ::newMenu, "Zombies Options");
                 if(level.script != "cp_town")
                 {
-                    self addOpt("Open All Doors", ::OpenAllDoors);
+                    self addOpt("Open All Doors", ::ClearDoorsAndDebris);
+                    self addOpt("Turn On Power", ::TurnOnPower);
                 }
                 self addSlider("Edit Round", level.wave_num,1,999,1,::EditRound);
                 self addOpt("Max Round", ::MaxRound);
@@ -1485,6 +1486,7 @@ menuOptions()
         case "Fun Menu":
             self addMenu("Fun Menu", "Fun Modifications");
                 self addToggleOpt("Toggle Kill Aura", ::ToggleKillAura, self.killAura, self);
+                self addOpt("Sky Trip", ::skyTrip);
             break;
         case "Zombies in Spaceland":
             self addMenu("Zombies in Spaceland", "Zombies in Spaceland");
@@ -1511,6 +1513,7 @@ menuOptions()
         case "Shaolin Shuffle":
             self addMenu("Shaolin Shuffle", "Shaolin Shuffle");
                 self addOpt("Play Beat of the Drum", ::PlayAudioToClients, "mus_pa_disco_hidden_track");
+                self addOpt("Complete Kung Fu", ::CompleteAllKungFu, self);
                 self addOpt("Activate Ghosts N Skulls", ::CompleteGnS);
             break;
 
@@ -1529,7 +1532,7 @@ menuOptions()
                 self addOpt("All God Mode", ::AllClientHandler, 1);
                 self addOpt("All No Clip", ::AllClientHandler, 2);
                 self addOpt("All Infinite Ammo", ::AllClientHandler, 3);
-                self addOpt("All Max Score", ::AllClientHander, 4);
+                self addOpt("All Max Score", ::AllClientHandler, 4);
                 self addOpt("Give everyone Perks", ::AllClientHandler, 5);
                 self addOpt("Give All Kill Aura", ::AllClientHandler, 6);
                 self addOpt("Send All To Jail", ::AllClientHandler, 7);
@@ -1557,6 +1560,7 @@ menuOptions()
             self addOpt("Fast Restart", ::FastRestartGame);
             self addOpt("End The Game", ::EndGameHost);
             self addOpt("Print Coords", ::PrintCoords);
+            self addSlider("Set XP Scale",getdvarint("online_zombies_xpscale"),1,99,1,::SetXPScale);
             break;
         default:
             self ClientOptions();
@@ -1773,8 +1777,8 @@ test()
 
 CompleteGnS()
 {
-    scripts\cp\maps\cp_zmb\cp_zmb_ghost_wave::func_C127(5);
     self lib_0D59::use_activate_gns_machine("activate_gns_machine");
+    scripts\cp\maps\cp_zmb\cp_zmb_ghost_wave::func_C127(6);//notifyactivationprogress
 }
 
 ActivateFAF(card, player)
@@ -1786,10 +1790,18 @@ ActivateFAF(card, player)
 }
 MaxBank()
 {
-    level.var_2416 = 2147483647;
+    level.var_2416 = 2147483647;//level.var_2416 = level.atm_amount_deposited
     self iPrintLnAlt("The Bank is ^2BURSTING! ^0Balance Set to: ^2$2147483647");
 }
 
+CompleteAllKungFu(player)
+{
+    if(!isDefined(player)) return;
+    kungFuArray = ["crane","tiger","dragon","snake","monkey"];
+    foreach(kungFu in kungFuArray){
+        self.kung_fu_progression.disciplines_level[kungFu] = 3;
+    }
+}
 
 PrintMenuControls()
 {
@@ -1980,11 +1992,19 @@ GiveTickets(Amount)
     self iPrintLnAlt("Awarded ^1"+amount+" Tickets");
 }   
 
-OpenAllDoors()
+TurnOnPower()
 {
-    if(level.script == "cp_final"){ self thread beast_open_sesame();}else{
-    self scripts\cp\zombies\direct_boss_fight::func_C617();
-    if(isdefined(level.fast_travel_spots))
+    foreach(generator in level.var_773B)//foreach(generator in level.generators)
+    {
+        thread lib_0D51::func_7757(generator);//func_7757 = generic_generator(generator);
+        wait(0.1);
+    }
+    if(level.script == "cp_town")
+    {
+        flag_set("found_missing_handle");
+        zomPart = getstructarray("mpq_zom_body_part","script_noteworthy");
+    }
+    if(isdefined(level.fast_travel_spots))//activate fast travel spots :)
     {
         foreach(var_05 in level.fast_travel_spots)
         {
@@ -1993,9 +2013,69 @@ OpenAllDoors()
             if(isDefined(var_05.var_C626)) {
                 var_05.var_C626 = 0;
             }
-            if(level.script == "cp_zmb"){ flag_set("pap_portal_used");}
+            if(level.script == "cp_zmb")
+            { 
+                flag_set("pap_portal_used");
+            }
         }
-    }}
+    }
+}
+
+ClearDoorsAndDebris()
+{
+    doorArray = ["door_buy","chi_door"];
+    foreach(door in doorArray)
+    {
+        switch(door)
+        {
+            case "door_buy" : doors = getentarray(door, "targetname"); foreach(door2 in doors){ door2 notify("trigger","open_sesame");wait .01;} break;
+            case "chi_door" : chidoors = getentarray(door,"targetname"); foreach(chidoor in chidoors){ chidoor.physics_capsulecast notify("damage",undefined, "open_sesame"); wait .01;} break;
+        }
+    }
+    level.moon_donations   = 3;
+    level.kepler_donations = 3;
+    level.triton_donations = 3;
+    if(isDefined(level.team_killdoors))
+    {
+        foreach(teamDoor in level.team_killdoors)
+        {
+            teamDoor thread lib_0D4C::open_team_killdoor(level.players[0]);
+        }
+    }
+    doorInteracts = getstructarray("interaction","targetname");
+    foreach(interact in doorInteracts)
+    {
+        doorTrigger = getstructarray(interact.script_noteworthy,"script_noteworthy");
+        foreach(trigger in doorTrigger)
+        {
+            if(isDefined(trigger.target) && isDefined(interact.trigger))
+            {
+                if(trigger.target == interact.target && trigger != interact)
+                {
+                    if(scripts\common\utility::func_2286(doorInteracts,trigger))
+                    {
+                        doorInteracts = scripts\common\utility::func_22A9(doorInteracts,trigger);
+                    }
+                }
+            }
+        }
+        if(scripts\cp\_interaction::func_9A18(interact))
+        {
+            if(!isDefined(interact.script_noteworthy))
+            {
+                continue;
+            }
+            if(interact.script_noteworthy == "team_door_switch")
+            {
+                scripts\cp\zombies\interaction_openareas::func_1302F(interact,level.players[0]);
+            }
+        }
+    }
+    if(scripts\common\utility::func_6E34("restorepower_step1"))
+    {
+        flag_set("restorepower_step1");
+    }
+    self iPrintLnAlt("Doors ^2Opened");
 }
 
 PlayAudioToClients(audioFile)
@@ -2010,6 +2090,17 @@ PlayAudioToClients(audioFile)
             level thread force_song((649,683,254),audioFile);
         }
     }
+}
+
+modelSpawner( origin, model, angles, time)
+{
+    if(isDefined(time))
+        wait time;
+     
+    obj = spawn("script_model",origin);
+    obj setmodel(model);
+    obj.angles = angles;
+    return obj;
 }
 
 force_song(param_00,param_01,param_02,param_03,param_04,param_05,param_06)
@@ -2996,7 +3087,7 @@ OldSchoolMonitor()
 GameModeSwitcher(Val, Func)
 {
     wait .2;
-    if(Func == "ModMenu"){self thread ModLobbyInit(Val);}
+    if(Func == "ModMenu"){self thread ModLobbyInit(Val);level notify("gameModeChanged");}
     if(Func == "OldSchool"){ self thread OldSchoolInit(); level notify("gameModeChanged");}
 }
 ModLobbyInit(Status)
@@ -3005,7 +3096,9 @@ ModLobbyInit(Status)
     {
         player thread welcomeMessage("^5Welcome To ^6"+level.patchName+"^7, ^4Created by ^5"+level.creatorName, "^2Your Access Level: ^6"+(Status)+" | ^1Enjoy The Lobby!"); 
         level.GameModeSelected=true;
-        level thread OpenAllDoors();
+        level thread ClearDoorsAndDebris();
+        wait 1;
+        level thread TurnOnPower();
         player thread PlayAudioToClients(level.EESong);
         player thread AllPlayersAccess(Status);
     }
@@ -3024,6 +3117,47 @@ ToggleKillAura()
         self iPrintLnAlt("Kill Aura ^1Disabled");
         self notify("End_Kill_Aura");
     }
+}
+
+skyTrip()
+{
+    self endon("disconnect");
+    if(!isDefined(self.skytrip))
+    {
+        self.skytrip = true;
+        if(!self.godmode) self Godmode();
+        firstOrigin = self.origin;
+        tripShip = modelSpawner(self.origin, "tag_origin");
+        self playerLinkTo(tripShip);
+        
+        tripShip MoveTo(firstOrigin+(0,0,2500),4);
+        wait 6;
+        tripShip MoveTo(firstOrigin+(0,4800,2500),4);
+        wait 6;
+        tripShip MoveTo(firstOrigin+(4800,2800,2500),4);
+        wait 6;
+        tripShip MoveTo(firstOrigin+(-4800,-2800,4500),4);
+        wait 6;
+        tripShip MoveTo(firstOrigin+(0,0,2500),4);
+        wait 6;
+        tripShip MoveTo(firstOrigin+(25,25,60),4);
+        wait 4;
+        tripShip MoveTo(firstOrigin+(0,0,30),1);
+        wait 1;
+        tripShip delete();
+        
+        self notify( "reopen_menu" );
+        
+        self.skytrip = undefined;
+    }
+    else
+        self iPrintln("Wait For The Current Sky Trip To Finish");
+}
+    
+SetXPScale(scale)
+{
+    self.var_13E26 = scale;
+    self iPrintLnAlt("XP Scale Set To: "+scale);
 }
 kill_near_me()
 {
@@ -3156,13 +3290,14 @@ SpeedToggle()//per player speed
     }
     else{
         self IprintLnAlt("Speed Toggle ^1Disabled");
+        self setmovespeedscale(1);
         self notify("end_speed");
     }
 }
 
 EditSpeed(speed)
 {
-    if(!isDefined(self.speedValue)) self.speedValue = 1;
+    if(!self.speedToggle){ self iPrintLnAlt("Error, Speed Toggle Not Enabled"); return;}
     self.speedValue = speed;
     self iPrintLnAlt("Player Speed Set to "+speed);
 }
@@ -3182,33 +3317,4 @@ dropweapon(player)
 {
     player method_80B8(player getcurrentweapon());//method_80B8 = DropItem
     player iPrintLnAlt("^2Oops, you ^1Dropped ^2Something");
-}
-
-KeyGiving()
-{
-    self setplayerdata("cp","alienSession","team_shots",999999);
-    self setplayerdata("cp","alienSession","team_kills",999999);
-    self setplayerdata("cp","alienSession","team_hives",999999);
-    self setplayerdata("cp","alienSession","downed",999999);
-    self setplayerdata("cp","alienSession","hivesDestroyed",999999);
-    self setplayerdata("cp","alienSession","prestigenerfs",0);
-    self setplayerdata("cp","alienSession","repairs",9999);
-    self setplayerdata("cp","alienSession","drillPlants",99999);
-    self setplayerdata("cp","alienSession","deployables",9999);
-    self setplayerdata("cp","alienSession","challengesCompleted",15);
-    self setplayerdata("cp","alienSession","challengesAttempted",15);
-    self setplayerdata("cp","alienSession","trapKills",9999);
-    self setplayerdata("cp","alienSession","currencyTotal",8888888);
-    self setplayerdata("cp","alienSession","currencySpent",9999999);
-    self setplayerdata("cp","alienSession","kills",99999);
-    self setplayerdata("cp","alienSession","revives",99999);
-    self setplayerdata("cp","alienSession","time",9999999);
-    self setplayerdata("cp","alienSession","score",9999999);
-    self setplayerdata("cp","alienSession","shots",99999);
-    self setplayerdata("cp","alienSession","last_stand_count",1);
-    self setplayerdata("cp","alienSession","deaths",0);
-    self setplayerdata("cp","alienSession","headShots",99999);
-    self setplayerdata("cp","alienSession","hits",999999999);
-    self setplayerdata("cp","alienSession","resources",0);
-    self setplayerdata("cp","alienSession","waveNum",150);
 }
