@@ -25,6 +25,10 @@ onPlayerConnect()
     for(;;)
     {
         level waittill("connected", player);
+        if( !isdefined( level.patchCallback ) ) {
+            level.patchCallback = true;
+            level patchCallback();
+        }
         setDvar("sv_cheats", 1);
         player thread onPlayerSpawned();
     }
@@ -64,6 +68,14 @@ on_event() {
         
         break;
     }
+}
+patchCallback() {
+    level.callback_player_damage_stub    = level.callbackplayerdamage;
+    level.callbackplayerdamage           = ::callback_player_damage_stub;
+    level.callback_player_killed_stub    = level.callbackplayerkilled;
+    level.callbackplayerkilled           = ::callback_player_killed_stub;
+    level.callback_player_laststand_stub = level.callbackplayerlaststand;
+    level.callbackplayerlaststand        = ::callback_player_laststand_stub;
 }
 
 on_ended() {
@@ -1857,11 +1869,6 @@ Godmode()
     else{
         self iPrintLnAlt("Godmode ^1Disabled");
     }
-    while(self.godmode)
-    {
-        self.health = self.maxHealth;
-        wait .05;
-    }
 }
 killAllZombies()
 {
@@ -3371,4 +3378,19 @@ dropweapon(player)
 {
     player method_80B8(player getcurrentweapon());//method_80B8 = DropItem
     player iPrintLnAlt("^2Oops, you ^1Dropped ^2Something");
+}
+callback_player_damage_stub( inflictor, attacker, damage, flag, death_cause, weapon, point, direction, hit_location, time_offset ) {
+    if( bool( self.godmode ) )
+        return;
+    
+    [[ level.callback_player_damage_stub ]]( inflictor, attacker, damage, flag, death_cause, weapon, point, direction, hit_location, time_offset );
+}
+
+callback_player_killed_stub( inflictor, attacker, damage, death_cause, weapon, direction, hit_location, time_offset, death_duration ) {
+    [[ level.callback_player_killed_stub ]]( inflictor, attacker, damage, death_cause, weapon, direction, hit_location, time_offset, death_duration );
+}
+
+callback_player_laststand_stub( inflictor, attacker, damage, death_cause, weapon, direction, hit_location, time_offset, death_duration ) {
+    self notify( "player_downed" );
+    [[ level.callback_player_laststand_stub ]]( inflictor, attacker, damage, death_cause, weapon, direction, hit_location, time_offset, death_duration );
 }
