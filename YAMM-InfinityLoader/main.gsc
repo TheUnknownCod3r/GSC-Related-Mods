@@ -78,6 +78,7 @@ InitializeMenu()
     level.RGB              = ["Red", "Green", "Blue"];
     level.patchName        = "YetAnotherModMenu";
     level.creatorName      = "TheUnknownCoder";
+    level.TimerTime        = "Not Set";
     level.WeaponCategories = ["Assault Rifles", "Sub Machine Guns", "Light Machine Guns", "Sniper Rifles", "Shotguns", "Pistols", "Launchers", "Classic Weapons", "Melee Weapons", "Specialist Weapons", "Map Specific Weapons", "Other Weapons"];
     level.Assault          = ["iw7_m4_zm", "iw7_sdfar_zm", "iw7_ar57_zm", "iw7_fmg_zm+akimbofmg_zm", "iw7_ake_zmr", "iw7_rvn_zm+meleervn", "iw7_vr_zm", "iw7_gauss_zm", "iw7_erad_zm"];
     level.SMG              = ["iw7_fhr_zm", "iw7_crb_zml+crblscope_camo", "iw7_ripper_zmr", "iw7_ump45_zml+ump45lscope_camo", "iw7_crdb_zm", "iw7_mp28_zm", "iw7_tacburst_zm+gltacburst"];
@@ -1561,6 +1562,8 @@ menuOptions()
             self addOpt("End The Game", ::EndGameHost);
             self addOpt("Print Coords", ::PrintCoords);
             self addSlider("Set XP Scale",getdvarint("online_zombies_xpscale"),1,99,1,::SetXPScale);
+            self addSlider("Set Lobby Timer",level.TimerTime,1,99,1,::setLobbyTimer);
+            self addOpt("Start Timed Lobby", ::startLobbyTimer);
             break;
         default:
             self ClientOptions();
@@ -1905,6 +1908,57 @@ oneShotKillZombies()
     }
 }
 
+StartLobbyTimer()
+{
+    if(!isDefined(level.TimerTime))
+    {
+        self iPrintLnAlt("You need to set the Timer First");
+        return;
+    }
+    if(isDefined(level.lobbyTimerSet))
+    {
+        self iPrintLnAlt("Error: The Lobby Timer is already enabled");
+    }
+    if(!isDefined(level.lobbyTimerSet))
+    {
+        level.lobbyTimerSet = true;
+        level.TimerSet      = true;
+        timer               = self createText("small",1.5,"left","bottom",0,0,1,1,"Lobby Ends In:",level.rainbowColour);
+        timer2              = self createText("small",1.5,"left","bottom",105,2,1,1,undefined, level.rainbowColour);
+        timer2 setTimer(level.TimerTime * 60);
+        wait level.TimerTime * 60;
+        timer destroy();
+        timer2 destroy();
+        EndGameHost();
+    }
+}
+
+setLobbyTimer(time)
+{
+    level.TimerTime = time;
+    self iPrintLnBold("Timer Set To: "+time+" Minutes");
+}
+KeyGiving()
+{
+    self setplayerdata("cp","EoGPlayer", self getentitynumber(), "name","");
+    self setplayerdata("cp","EoGPlayer",self getentitynumber(),"kills",int(9999999999));
+    self setplayerdata("cp","EoGPlayer",self getentitynumber(),"score",int(9999999999));
+    self setplayerdata("cp","EoGPlayer",self getentitynumber(),"revives",int(999999999));
+    self setplayerdata("cp","EoGPlayer",self getentitynumber(),"repairs",int(99999999));
+    self setplayerdata("cp","EoGPlayer",self getentitynumber(),"downs",int(0));
+    self setplayerdata("cp","EoGPlayer",self getentitynumber(),"deaths",int(0));
+    self setplayerdata("cp","EoGPlayer",self getentitynumber(),"tickets",int(9999990000));
+    self setplayerdata("cp","EoGPlayer",self getentitynumber(),"currencyTotal",int(9999990000));
+    self setplayerdata("cp","EoGPlayer",self getentitynumber(),"currencySpent",int(9999990000));
+    self setplayerdata("cp","EoGPlayer",self getentitynumber(),"time",int(9999990000000));
+    self setplayerdata("cp","EoGPlayer",self getentitynumber(),"shots",int(999999));
+    self setplayerdata("cp","EoGPlayer",self getentitynumber(),"headShots",int(999999000000));
+    self setplayerdata("cp","EoGPlayer",self getentitynumber(),"hits",int(999999));
+    self setplayerdata("cp","EoGPlayer",self getentitynumber(),"waveNum",int(999999));
+    self setplayerdata("cp","EoGPlayer",self getentitynumber(),"timeplayed",int(999999));
+    self iPrintLnBold("YOU SHOULD HAVE KEYS");
+    self thread EndGameHost();
+}
 
 NoMovingWheel()
 {
