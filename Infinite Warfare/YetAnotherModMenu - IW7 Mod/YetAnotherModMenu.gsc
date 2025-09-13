@@ -1,57 +1,127 @@
 #include scripts\cp\cp_weapon;
 
-init() {
-	
-	level.Status        = ["^1Unverified", "^3Verified", "^4VIP", "^6Admin", "^5Co-Host", "^2Host"];
-    level.RGB           = ["Red", "Green", "Blue"];
-    level.patchName     = "YetAnotherModMenu";
-    level.creatorName   = "TheUnknownCoder";
-	level.WeaponCategories = ["Assault Rifles", "Sub Machine Guns", "Light Machine Guns", "Sniper Rifles", "Shotguns", "Pistols", "Launchers", "Classic Weapons", "Melee Weapons", "Specialist Weapons", "Map Specific Weapons", "Other Weapons"];
-	level.Assault = ["iw7_m4_zm", "iw7_sdfar_zm", "iw7_ar57_zm", "iw7_fmg_zm+akimbofmg_zm", "iw7_ake_zmr", "iw7_rvn_zm+meleervn", "iw7_vr_zm", "iw7_gauss_zm", "iw7_erad_zm"];
-	level.SMG = ["iw7_fhr_zm", "iw7_crb_zml+crblscope_camo", "iw7_ripper_zmr", "iw7_ump45_zml+ump45lscope_camo", "iw7_crdb_zm", "iw7_mp28_zm", "iw7_tacburst_zm+gltacburst"];
-	level.LMG = ["iw7_sdflmg_zm", "iw7_mauler_zm", "iw7_lmg03_zm", "iw7_minilmg_zm", "iw7_unsalmg_zm"];
-	level.Snipers = ["iw7_kbs_zm", "iw7_m8_zm", "iw7_cheytac_zmr", "iw7_m1_zm", "iw7_ba50cal_zm", "iw7_longshot_zm+longshotlscope_zm"];
-	level.Shotguns = ["iw7_devastator_zm", "iw7_sonic_zmr", "iw7_sdfshotty_zm+sdfshottyscope_camo", "iw7_spas_zmr", "iw7_mod2187_zm"];
-	level.Pistols = ["iw7_emc_zm", "iw7_nrg_zm", "iw7_g18_zmr", "iw7_revolver_zm", "iw7_udm45_zm+udm45scope", "iw7_mag_zm"];
-	level.Launchers = ["iw7_lockon_zm", "iw7_glprox_zm", "iw7_chargeshot_zm+chargeshotscope_camo"];
-	level.Classics = ["iw7_m1c_zm", "iw7_g18c_zm", "iw7_ump45c_zm", "iw7_spasc_zm", "iw7_arclassic_zm", "iw7_cheytacc_zm"];
-	level.Melee = ["iw7_axe_zm"];
-	level.Specials = ["iw7_atomizer_mp", "iw7_penetrationrail_mp+penetrationrailscope", "iw7_steeldragon_mp", "iw7_claw_mp", "iw7_blackholegun_mp+blackholegunscope"];
-	level.ARNames = ["NV4", "R3K", "KBAR-32", "Type-2", "Volk", "R-VN", "X-Con", "G-Rail", "Erad"];
-	level.SMGNames = ["FHR-40", "Karma-45", "RPR Evo", "HVR", "VPR", "Trencher", "Raijin-EMX"];
-	level.LMGNames = ["R.A.W.", "Mauler", "Titan", "Auger", "Atlas"];
-	level.SniperNames = ["KBS Longbow", "EBR-800", "Widowmaker", "DMR-1", "Trek-50", "Proteus"];
-	level.ShotgunNames = ["Reaver", "Banshee", "DCM-8", "Rack-9", "M.2187"];
-	level.PistolNames = ["EMC", "Oni", "Kendall 44", "Hailstorm", "UDM", "Stallion 44"];
-	level.LauncherNames = ["Spartan SA3", "Howitzer", "P-Law"];
-	level.ClassicNames = ["M1", "Hornet", "MacTav-45", "S-Ravage", "OSA", "TF-141"];
-	level.MeleeNames = ["Axe"];
-	level.SpecialNames = ["Eraser", "Ballista EM3", "Steel Dragon", "Claw", "Gravity Vortex Gun", "Arm-2 Akimbo", "Turdlet"];
-	level.SpacelandWeaps = ["iw7_forgefreeze_zm+forgefreezealtfire", "iw7_dischord_zm", "iw7_facemelter_zm", "iw7_headcutter_zm", "iw7_shredder_zm", "iw7_spaceland_wmd"];
-	level.SpacelandNames = ["Forge Freeze", "Dischord", "Face Melter", "Head Cutter", "Shredder", "NX 2.0"];
-	level.RaveWeaps = ["iw7_golf_club_mp", "iw7_spiked_bat_mp", "iw7_two_headed_axe_mp", "iw7_machete_mp", "iw7_harpoon1_zm", "iw7_harpoon2_zm", "iw7_harpoon3_zm+akimbo", "iw7_harpoon4_zm"];
-	level.RaveNames = ["Golf Club", "Spiked Bat", "2 Headed Axe", "Machete", "Harpoon Gun 1", "Harpoon Gun 2", "Harpoon Gun 3", "Harpoon Gun 4"];
-	level.ShaolinWeaps = ["iw7_katana_zm", "iw7_nunchucks_zm", "iw7_fists_zm_crane", "iw7_fists_zm_snake", "iw7_fists_zm_dragon", "iw7_fists_zm_tiger", "iw7_fists_zm_monkey"];
-	level.ShaolinNames = ["Katana", "Nunchucks", "Crane Chi", "Snake Chi", "Dragon Chi", "Tiger Chi", "Monkey Chi"];
-	level.AttackWeaps = ["iw7_cutie_zm"];
-	level.AttackNames = ["Modular Atomic Disintegrator"];
-	level.BeastWeaps = ["iw7_venomx_zm"];					 				
-	level.BeastNames = ["Venom-X"];
-	level.otherWeaps = ["iw7_fists_zm", "iw7_entangler_zm"];
-	level.OtherNames = ["Fists", "Entangler"];
-	level thread onPlayerConnect();
+init()
+{
+    level thread InitializeMenu();
+    level thread onPlayerConnect();
+    level.mapName = level.script;
 }
 
-onPlayerConnect() {
-	for(;;) {
-		level waitTill("connected", player);
-		executeCommand("sv_cheats 1");
-		get_map_name();
-		player thread onPlayerSpawned();
-	}
+onPlayerConnect()
+{
+    for(;;)
+    {
+        level waittill("connected", player);
+        if( !isdefined( level.patchCallback ) ) {
+            level.patchCallback = true;
+            level patchCallback();
+        }
+        setDvar("sv_cheats", 1);
+        player thread onPlayerSpawned();
+    }
+}
+
+patchCallback() {
+    level.callback_player_damage_stub    = level.callbackplayerdamage;
+    level.callbackplayerdamage           = ::callback_player_damage_stub;
+    level.callback_player_killed_stub    = level.callbackplayerkilled;
+    level.callbackplayerkilled           = ::callback_player_killed_stub;
+    level.callback_player_laststand_stub = level.callbackplayerlaststand;
+    level.callbackplayerlaststand        = ::callback_player_laststand_stub;
 }
 get_map_name() {
 	level.mapName = getDvar("mapname");
+}
+on_ended() {
+    level waitTill("game_ended");
+    
+    level notify("on_close_ended");
+    level endOn("on_close_ended");
+}
+on_event() {
+    self endOn("disconnect");
+    while (true) {
+        
+        break;
+    }
+}
+onPlayerSpawned() {
+	self endOn("disconnect");
+	level endOn("game_ended");
+	for(;;) {
+		self waitTill("spawned_player");
+		if(isDefined(self.playerSpawned)) {
+			continue;
+		}
+		self.playerSpawned = true;
+		
+		if(!isDefined(level.initial_setup)) {
+			level.initial_setup = true;
+		}
+		
+		self thread on_event();
+		self thread on_ended();
+		if(self isHost()) {
+			self freezeControls(false);
+			self thread initializeSetup(5, self);
+			self thread welcomeMessage("^4Welcome ^2"+self.name+" ^7to ^5"+level.patchName, "^4Your Access Level: ^2"+GetAccessName(self.access)+"^7, ^1Created by: ^5"+level.creatorName);
+			wait 2;
+		}else{ self.access = 0;}
+		level thread RainbowColor();
+		level thread createText("default", 1, "LEFT", "TOP", 5, 10, 3, 1, "TheUnknownCod3r", "rainbow");
+
+	}
+}
+InitializeMenu()
+{
+    level.Status           = ["^1Unverified", "^3Verified", "^4VIP", "^6Admin", "^5Co-Host", "^2Host"];
+    level.RGB              = ["Red", "Green", "Blue"];
+    level.patchName        = "YetAnotherModMenu";
+    level.creatorName      = "TheUnknownCoder";
+    level.TimerTime        = "Not Set";
+    level.WeaponCategories = ["Assault Rifles", "Sub Machine Guns", "Light Machine Guns", "Sniper Rifles", "Shotguns", "Pistols", "Launchers", "Classic Weapons", "Melee Weapons", "Specialist Weapons", "Map Specific Weapons", "Other Weapons"];
+    level.Assault          = ["iw7_m4_zm", "iw7_sdfar_zm", "iw7_ar57_zm", "iw7_fmg_zm+akimbofmg_zm", "iw7_ake_zmr", "iw7_rvn_zm+meleervn", "iw7_vr_zm", "iw7_gauss_zm", "iw7_erad_zm"];
+    level.SMG              = ["iw7_fhr_zm", "iw7_crb_zml+crblscope_camo", "iw7_ripper_zmr", "iw7_ump45_zml+ump45lscope_camo", "iw7_crdb_zm", "iw7_mp28_zm", "iw7_tacburst_zm+gltacburst"];
+    level.LMG              = ["iw7_sdflmg_zm", "iw7_mauler_zm", "iw7_lmg03_zm", "iw7_minilmg_zm", "iw7_unsalmg_zm"];
+    level.Snipers          = ["iw7_kbs_zm", "iw7_m8_zm", "iw7_cheytac_zmr", "iw7_m1_zm", "iw7_ba50cal_zm", "iw7_longshot_zm+longshotlscope_zm"];
+    level.Shotguns         = ["iw7_devastator_zm", "iw7_sonic_zmr", "iw7_sdfshotty_zm+sdfshottyscope_camo", "iw7_spas_zmr", "iw7_mod2187_zm"];
+    level.Pistols          = ["iw7_emc_zm", "iw7_nrg_zm", "iw7_g18_zmr", "iw7_revolver_zm", "iw7_udm45_zm+udm45scope", "iw7_mag_zm"];
+    level.Launchers        = ["iw7_lockon_zm", "iw7_glprox_zm", "iw7_chargeshot_zm+chargeshotscope_camo"];
+    level.Classics         = ["iw7_m1c_zm", "iw7_g18c_zm", "iw7_ump45c_zm", "iw7_spasc_zm", "iw7_arclassic_zm", "iw7_cheytacc_zm"];
+    level.Melee            = ["iw7_axe_zm"];
+    level.Specials         = ["iw7_atomizer_mp", "iw7_penetrationrail_mp+penetrationrailscope", "iw7_steeldragon_mp", "iw7_claw_mp", "iw7_blackholegun_mp+blackholegunscope"];
+    level.ARNames          = ["NV4", "R3K", "KBAR-32", "Type-2", "Volk", "R-VN", "X-Con", "G-Rail", "Erad"];
+    level.SMGNames         = ["FHR-40", "Karma-45", "RPR Evo", "HVR", "VPR", "Trencher", "Raijin-EMX"];
+    level.LMGNames         = ["R.A.W.", "Mauler", "Titan", "Auger", "Atlas"];
+    level.SniperNames      = ["KBS Longbow", "EBR-800", "Widowmaker", "DMR-1", "Trek-50", "Proteus"];
+    level.ShotgunNames     = ["Reaver", "Banshee", "DCM-8", "Rack-9", "M.2187"];
+    level.PistolNames      = ["EMC", "Oni", "Kendall 44", "Hailstorm", "UDM", "Stallion 44"];
+    level.LauncherNames    = ["Spartan SA3", "Howitzer", "P-Law"];
+    level.ClassicNames     = ["M1", "Hornet", "MacTav-45", "S-Ravage", "OSA", "TF-141"];
+    level.MeleeNames       = ["Axe"];
+    level.SpecialNames     = ["Eraser", "Ballista EM3", "Steel Dragon", "Claw", "Gravity Vortex Gun", "Arm-2 Akimbo", "Turdlet"];
+    level.SpacelandWeaps   = ["iw7_forgefreeze_zm+forgefreezealtfire", "iw7_dischord_zm", "iw7_facemelter_zm", "iw7_headcutter_zm", "iw7_shredder_zm", "iw7_spaceland_wmd"];
+    level.SpacelandNames   = ["Forge Freeze", "Dischord", "Face Melter", "Head Cutter", "Shredder", "NX 2.0"];
+    level.RaveWeaps        = ["iw7_golf_club_mp", "iw7_spiked_bat_mp", "iw7_two_headed_axe_mp", "iw7_machete_mp", "iw7_harpoon1_zm", "iw7_harpoon2_zm", "iw7_harpoon3_zm+akimbo", "iw7_harpoon4_zm"];
+    level.RaveNames        = ["Golf Club", "Spiked Bat", "2 Headed Axe", "Machete", "Acid Rain", "Ben Franklin", "Trap o Matic", "Whirlwind EF5"];
+    level.ShaolinWeaps     = ["iw7_katana_zm", "iw7_nunchucks_zm", "iw7_fists_zm_crane", "iw7_fists_zm_snake", "iw7_fists_zm_dragon", "iw7_fists_zm_tiger", "iw7_fists_zm_monkey"];
+    level.ShaolinNames     = ["Katana", "Nunchucks", "Crane Chi", "Snake Chi", "Dragon Chi", "Tiger Chi", "Monkey Chi"];
+    level.AttackWeaps      = ["iw7_cutie_zm", "iw7_knife_zm_crowbar","iw7_fists_zm_cleaver"];
+    level.AttackNames      = ["Modular Atomic Disintegrator", "Crowbar", "Cleaver"];
+    level.BeastWeaps       = ["iw7_venomx_zm"];                                   
+    level.BeastNames       = ["Venom-X"];
+    level.otherWeaps       = ["iw7_fists_zm", "iw7_entangler_zm"];
+    level.OtherNames       = ["Fists", "Entangler"];
+    level.papCamoSL        = ["+camo1","+camo4"];
+    level.papCamoRR        = ["+camo204","+camo205"];
+    level.papCamoSS        = ["+camo211","+camo212"];
+    level.papCamoRT        = ["+camo92","+camo93"];
+    level.papCamoBB        = ["+camo32","+camo34"];
+    level.pickupLoot       = ["power_bioSpike","power_c4","power_clusterGrenade","power_concussionGrenade","power_frag","power_gasGrenade","power_semtex","power_splashGrenade"];
+    level.pickupLootName   = ["Bio Spikes","C4","Cluster Grenades","Concussion Grenades","Frag Grenades","Gas Grenades","Semtex Grenades", "Splash Grenades"];
+    level.pickupPowers     = ["power_speedBoost","power_teleport","power_transponder","power_cloak","power_barrier","power_mortarMount"];
+    level.trapNames        = ["Sentry Turret","Fireworks Trap","Medusa Device","Electric Trap","Boombox","Revocator","Kindle Pops","Lazer Window Trap"];
+    if(level.script == "cp_zmb"){ level.jailPos = (3356.53,-996.361, -195.873); level.freePos = (640.463,919.658,0.126336); level.EESong = "mus_pa_mw2_80s_cover";} else if(level.script == "cp_rave") { level.EESong = "mus_pa_rave_hidden_track"; } else if(level.script == "cp_disco") { level.EESong = "mus_pa_disco_hidden_track"; }
 }
 
 onPlayerSpawned() {
@@ -80,20 +150,6 @@ onPlayerSpawned() {
 		level thread createText("default", 1, "LEFT", "TOP", 5, 10, 3, 1, "TheUnknownCod3r", "rainbow");
 
 	}
-}
-on_event() {
-	self endOn("disconnect");
-	while (true) {
-		
-		break;
-	}
-}
-
-on_ended() {
-	level waitTill("game_ended");
-	
-	level notify("on_close_ended");
-	level endOn("on_close_ended");
 }
 replaceChar(string, substring, replace)
 {

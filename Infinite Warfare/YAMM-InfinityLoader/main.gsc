@@ -11,6 +11,7 @@
 #include common_scripts\utility;
 #include scripts\cp\zombies\direct_boss_fight;
 #include scripts\cp\zombies\zombie_jukebox;
+#include scripts\cp\_persistence;
 //Preprocessor definition chaining
 
 init()
@@ -57,16 +58,7 @@ onPlayerSpawned()
             wait 3;
         }
         else { self.access = 0;}
-        self thread on_event();
-        self thread on_ended();
         level thread RainbowColor();
-    }
-}
-on_event() {
-    self endOn("disconnect");
-    while (true) {
-        
-        break;
     }
 }
 patchCallback() {
@@ -78,12 +70,24 @@ patchCallback() {
     level.callbackplayerlaststand        = ::callback_player_laststand_stub;
 }
 
-on_ended() {
-    level waitTill("game_ended");
+
+callback_player_damage_stub( inflictor, attacker, damage, flag, death_cause, weapon, point, direction, hit_location, time_offset ) {
+    if( bool( self.godmode ) )
+        return;
     
-    level notify("on_close_ended");
-    level endOn("on_close_ended");
+    [[ level.callback_player_damage_stub ]]( inflictor, attacker, damage, flag, death_cause, weapon, point, direction, hit_location, time_offset );
 }
+
+
+callback_player_killed_stub( inflictor, attacker, damage, death_cause, weapon, direction, hit_location, time_offset, death_duration ) {
+    [[ level.callback_player_killed_stub ]]( inflictor, attacker, damage, death_cause, weapon, direction, hit_location, time_offset, death_duration );
+}
+
+callback_player_laststand_stub( inflictor, attacker, damage, death_cause, weapon, direction, hit_location, time_offset, death_duration ) {
+    self notify( "player_downed" );
+    [[ level.callback_player_laststand_stub ]]( inflictor, attacker, damage, death_cause, weapon, direction, hit_location, time_offset, death_duration );
+}
+
 InitializeMenu()
 {
     level.Status           = ["^1Unverified", "^3Verified", "^4VIP", "^6Admin", "^5Co-Host", "^2Host"];
@@ -136,1624 +140,6 @@ InitializeMenu()
     if(level.script == "cp_zmb"){ level.jailPos = (3356.53,-996.361, -195.873); level.freePos = (640.463,919.658,0.126336); level.EESong = "mus_pa_mw2_80s_cover";} else if(level.script == "cp_rave") { level.EESong = "mus_pa_rave_hidden_track"; } else if(level.script == "cp_disco") { level.EESong = "mus_pa_disco_hidden_track"; }
 }
 
-iPrintLnAlt(String)
-{   
-    self.iPrintLnAlt notify("StopFade");
-    self.iPrintLnAlt.alpha = 1;
-    if(!isDefined(self.iPrintLnAlt)) { self.iPrintLnAlt = self createText("objective", 1, "left", "bottom",0, -185, 3, 1, String, (1, 1, 1));}
-    else{ self.iPrintLnAlt setText(String); }
-    self.iPrintLnAlt thread hudfade(0,4);
-}  
-
-createText(font, fontScale, align, relative, x, y, sort, alpha, text, color, movescale, isLevel)
-{  
-    textElem                = scripts\cp\_utility::createfontstring(font,fontscale);
-    textElem.font           = font;
-    textElem.fontscale      = fontScale;
-    textElem.alpha          = alpha;
-    textElem.sort           = sort;
-    textElem.foreground     = true;
-    textElem.hideWhenInMenu = (self.menuSetting["MenuStealth"] ? true : false);
-    textElem.archived       = false;
-    if(IsDefined(movescale))
-        x += self.menuSetting["MenuX"];
-        
-    if(IsDefined(movescale))
-        y += self.menuSetting["MenuY"];
-    textElem.x         = x;
-    textElem.y         = y;
-    textElem.alignX    = align;
-    textElem.alignY    = relative;
-    textElem.horzAlign = align;
-    textElem.vertAlign = relative;
-    //textElem scripts\cp\_utility::setpoint(align, relative, x, y);//works now, need to redo coords correctly
-    if(color != "rainbow")
-        textElem.color = color;
-    else
-        textElem.color = level.rainbowColour;
-    textElem.text = text;
-    textElem setText(text);
-    return textElem;
-}
-
-createRectangle(align, relative, x, y, width, height, color, shader, sort, alpha, movescale, isLevel)
-{
-    boxElem          = newClientHudElem(self);
-    boxElem.elemType = "icon";
-    boxElem.children = [];
-    if(IsDefined(movescale))
-        x += self.menuSetting["MenuX"];
-        
-    if(IsDefined(movescale))
-        y += self.menuSetting["MenuY"];
-    boxElem.alpha          = alpha;
-    boxElem.sort           = sort;
-    boxElem.archived       = false;
-    boxElem.foreground     = true;
-    boxElem.hidden         = false;
-    boxElem.hideWhenInMenu = (self.menuSetting["MenuStealth"] ? true : false);
-    boxElem.x              = x;
-    boxElem.y              = y;
-    boxElem.alignX         = align;
-    boxElem.alignY         = relative;
-    boxElem.horzAlign      = align;
-    boxElem.vertAlign      = relative;
-    //boxElem scripts\cp\_utility::setpoint(align, relative, x, y);//works, need to redo coords for this
-    if(color != "rainbow")
-        boxElem.color = color;
-    else
-        boxElem thread doRainbow();
-    
-    boxElem setShader(shader, width, height);
-    return boxElem;
-}
-
-affectElement(type, time, value)
-{
-    if(type == "x" || type == "y")
-        self moveOverTime(time);
-    else
-        self fadeOverTime(time);
-        
-    if(type == "x")
-        self.x = value;
-    if(type == "y")
-        self.y = value;
-    if(type == "alpha")
-        self.alpha = value;
-    if(type == "color")
-        self.color = value;
-}
-
-hudMoveX(x, time)
-{
-    self moveOverTime(time);
-    self.x = x;
-    wait time;
-}
-hudFade(alpha, time)
-{
-    self fadeOverTime(time);
-    self.alpha = alpha;
-    wait time;
-}
-
-fadeToColor(colour, time)
-{
-    self endon("colors_over");
-    self fadeOverTime(time);
-    self.color = colour;
-}
-
-GetPresetColours(ID)
-{
-    RGB = [(0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1), (1, 1, 0), (0, 1, 1), (1, .5, 0), (1, 0, 1), (1, 1, 1)];
-    return RGB[ID];
-}
-GetTrapNames()
-{
-    return "sentry|fireworks|medusa|electric|boombox|revocator|gascan|windowtrap";
-}
-GetColoursSlider(Bool)
-{
-    return (IsDefined(Bool) ? "|Red|Green|Blue|Yellow|Cyan|Orange|Purple|White" : "Black|Red|Green|Blue|Yellow|Cyan|Orange|Purple|White");
-}
-
-getName()
-{
-    return self.name;
-}
-
-round(val)
-{
-    val = val + "";
-    new_val = "";
-    for(e=0;e<val.size;e++)
-    {
-        new_val += val[e];
-        if(val[e-1] == "." && e > 1)
-            return new_val;
-    }
-    return val;
-}
-
-ArrayRandomize(array)
-{
-    for(i=0;i<array.size;i++)
-    {
-        j    = RandomInt(array.size);
-        temp = array[i];
-        array[i] = array[j];
-        array[j] = temp;
-    }
-    return array;
-}
-
-bool(variable)
-{
-    return isdefined(variable) && int(variable);
-}
-
-GetFloatString(String)
-{
-  setDvar("Temp", String);
-  return GetDvarFloat("Temp");
-}
-
-doRainbow(Fade)
-{
-    if(self.shader == "gradient_fadein")
-    {
-        if(IsDefined(Fade))
-            self fadeToColor(level.GradRain, .5);
-        else
-            self.color = level.GradRain;
-    }
-    else
-    {
-        if(IsDefined(Fade))
-            self fadeToColor(level.NonGradRain, .5);
-        else
-            self.color = level.NonGradRain;
-    }
-    
-    wait .1;
-    
-    self endon("StopRainbow");
-    while(IsDefined(self))
-    {
-        if(self.shader == "gradient_fadein")
-            wait 1.3;
-            
-        self thread fadeToColor(level.rainbowColour, 1);
-        wait 1;
-    }
-}
-
-RainbowChecks()
-{
-    while(true)
-    {
-        level.GradRain = level.rainbowColour;
-        wait 1.3;
-        level.NonGradRain = level.rainbowColour;
-        wait 1;
-    }
-}
-
-RainbowColor()
-{
-    rainbow = spawnStruct();
-    rainbow.r = 255;
-    rainbow.g = 0;
-    rainbow.b = 0;
-    rainbow.stage = 0;
-    time = 5;
-    level.rainbowColour = (0, 0, 0);
-    thread RainbowChecks();
-    for(;;)
-    {
-        if(rainbow.stage == 0)
-        {
-            rainbow.b += time;
-            if(rainbow.b == 255)
-                rainbow.stage = 1;
-        }
-        else if(rainbow.stage == 1)
-        {
-            rainbow.r -= time;
-            if(rainbow.r == 0)
-                rainbow.stage = 2;
-        }
-        else if(rainbow.stage == 2)
-        {
-            rainbow.g += time;
-            if(rainbow.g == 255)
-                rainbow.stage = 3;
-        }
-        else if(rainbow.stage == 3)
-        {
-            rainbow.b -= time;
-            if(rainbow.b == 0)
-                rainbow.stage = 4;
-        }
-        else if(rainbow.stage == 4)
-        {
-            rainbow.r += time;
-            if(rainbow.r == 255)
-                rainbow.stage = 5;
-        }
-        else if(rainbow.stage == 5)
-        {
-            rainbow.g -= time;
-            if(rainbow.g == 0)
-                rainbow.stage = 0;
-        }
-        level.rainbowColour = (rainbow.r / 255, rainbow.g / 255, rainbow.b / 255);
-        wait .05;
-    }
-}
-
-destroyAll(array)
-{
-    if(!isDefined(array))
-        return;
-    keys = getArrayKeys(array);
-    for(a=0;a<keys.size;a++)
-    if(isDefined(array[keys[a]][0]))
-        for(e=0;e<array[keys[a]].size;e++)
-            array[keys[a]][e] destroy();
-    else
-        array[keys[a]] destroy();
-}
-
-IsInArray(array, element)
-{
-   if(!isdefined(element))
-        return false;
-        
-   foreach(e in array)
-        if(e == element)
-            return true;
-}
-
-initializeSetup(access, player, allaccess)
-{
-    if(access == player.access && !IsDefined(player.isHost) && isDefined(player.access))
-        return;
-        
-    if(isDefined(player.access) && player.access == 5)
-        return; 
-        
-    player notify("end_menu");
-    
-    if(bool(player.menu["isOpen"]))
-        player menuClose();
-        
-    player.menu         = [];
-    player.previousMenu = [];
-    player.PlayerHuds   = [];
-    player.menu["isOpen"] = false;
-    player.menu["isLocked"] = false;
-    
-    if(!isDefined(player.menu["current"]))
-        player.menu["current"] = "main";
-        
-    player.access = access;
-    
-    if(player.access != 0)
-    {
-        player thread menuMonitor();
-        player menuOptions();
-        player.menuSetting["HUDEdit"] = true;
-        player thread MenuLoad();
-        player iPrintLn("You have Been Given "+GetAccessName(access));
-        player thread PrintMenuControls();
-    }
-}
-
-AllPlayersAccess(access)
-{
-    foreach(player in level.players)
-    {
-        if(player IsHost() || player == self)
-            continue;
-            
-        self thread initializeSetup(access, player, true);
-        
-        wait .1;
-    }
-}
-
-GetAccessName(Val)
-{
-    Status = ["Unverified", "Verified", "VIP", "Admin", "Co-Host", "Host"];
-    return Status[Val];
-}
-
-MenuSave()
-{
-    SaveDesgin = 
-        SetMenuBool(self.menuSetting["MenuFreeze"]) +";"+
-        SetMenuBool(self.menuSetting["MenuStealth"]) +";"+
-        (self.menuSetting["BannerGradRainbow"] != "rainbow" ? 0 : "1") +";"+
-        (self.menuSetting["ScrollerGradRainbow"] != "rainbow" ? 0 : "1") +";"+
-        (self.menuSetting["BackgroundGradRainbow"] != "rainbow" ? 0 : "1") +";"+
-        (self.menuSetting["BannerNoneRainbow"] != "rainbow" ? 0 : "1") +";"+
-        round(self.menuSetting["ScrollerGradColor0"]) +";"+
-        round(self.menuSetting["ScrollerGradColor1"]) +";"+
-        round(self.menuSetting["ScrollerGradColor2"]) +";"+
-        round(self.menuSetting["BackgroundGradColor0"]) +";"+
-        round(self.menuSetting["BackgroundGradColor1"]) +";"+
-        round(self.menuSetting["BackgroundGradColor2"]) +";"+
-        round(self.menuSetting["BannerNoneColor0"]) +";"+
-        round(self.menuSetting["BannerNoneColor1"]) +";"+
-        round(self.menuSetting["BannerNoneColor2"]) +";"+
-        round(self.menuSetting["BannerGradColor0"]) +";"+
-        round(self.menuSetting["BannerGradColor1"]) +";"+
-        round(self.menuSetting["BannerGradColor2"]) +";"+
-        self.menuSetting["MenuX"] +";"+
-        self.menuSetting["MenuY"] +";"+
-        SetMenuBool(self.menuSetting["MenuGodmode"]) +";"+
-        SetMenuBool(self.menuSetting["ShowClientINFO"]);
-    
-    setDvar(self getName() + "MenuDesign", SaveDesgin);
-}
-
-MenuLoad(Val)
-{  
-    if(!isdefined(self.menuSetting))
-        self.menuSetting = [];
-        
-    MenuDefaults = strTok("0;1;1;1;0;1;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;1",";");
-    
-    if(!IsDefined(Val) || IsDefined(Val) && Val == 0)
-    {
-        
-        if(GetDvar(self getName() + "MenuDesign").size > 0)
-        {
-            dvar         = GetDvar(self getName() + "MenuDesign"); 
-            MenuDefaults = strTok(dvar, ";");
-        }
-    }
-    
-    self.menuSetting["MenuFreeze"] = GetMenuBool(MenuDefaults[0]);
-    self.menuSetting["MenuGodmode"] = GetMenuBool(MenuDefaults[20]);
-    self.menuSetting["MenuStealth"] = GetMenuBool(MenuDefaults[1]);
-    self.menuSetting["ShowClientINFO"] = GetMenuBool(MenuDefaults[21]);
-    
-    self.menuSetting["ScrollerGradColor0"] = int(MenuDefaults[6]);
-    self.menuSetting["ScrollerGradColor1"] = int(MenuDefaults[7]);
-    self.menuSetting["ScrollerGradColor2"] = int(MenuDefaults[8]);
-    
-    self.menuSetting["BackgroundGradColor0"] = int(MenuDefaults[9]);
-    self.menuSetting["BackgroundGradColor1"] = int(MenuDefaults[10]);
-    self.menuSetting["BackgroundGradColor2"] = int(MenuDefaults[11]);
-    
-    self.menuSetting["BannerNoneColor0"] = int(MenuDefaults[12]);
-    self.menuSetting["BannerNoneColor1"] = int(MenuDefaults[13]);
-    self.menuSetting["BannerNoneColor2"] = int(MenuDefaults[14]);
-    
-    self.menuSetting["BannerGradColor0"] = int(MenuDefaults[15]);
-    self.menuSetting["BannerGradColor1"] = int(MenuDefaults[16]);
-    self.menuSetting["BannerGradColor2"] = int(MenuDefaults[17]);
-    
-    self.menuSetting["BannerGradRainbow"] = (MenuDefaults[2] == "1" ? "rainbow" : (GetFloatString(MenuDefaults[15]), GetFloatString(MenuDefaults[16]), GetFloatString(MenuDefaults[17])));
-    self.menuSetting["ScrollerGradRainbow"] = (MenuDefaults[3] == "1" ? "rainbow" : (GetFloatString(MenuDefaults[6]), GetFloatString(MenuDefaults[7]), GetFloatString(MenuDefaults[8])));
-    self.menuSetting["BackgroundGradRainbow"] = (MenuDefaults[4] == "1" ? "rainbow" : (GetFloatString(MenuDefaults[9]), GetFloatString(MenuDefaults[10]), GetFloatString(MenuDefaults[11])));
-    self.menuSetting["BannerNoneRainbow"] = (MenuDefaults[5] == "1" ? "rainbow" : (GetFloatString(MenuDefaults[12]), GetFloatString(MenuDefaults[13]), GetFloatString(MenuDefaults[14])));
-    
-    self.menuSetting["MenuX"] = int(MenuDefaults[18]);
-    self.menuSetting["MenuY"] = int(MenuDefaults[19]);
-    
-    if(IsDefined(Val) && Val == 1 || IsDefined(Val) && Val == 0)
-    {
-        self menuClose();
-        waittillframeend;
-        self menuOpen();
-    }
-}
-
-GetMenuBool(String)
-{
-    return (String == "1" ? true : false);
-}
-
-SetMenuBool(variable)
-{
-    return (isdefined(variable) && int(variable) ? "1" : "0");
-}
-
-FreezeInMenu()
-{
-    self.menuSetting["MenuFreeze"] = !bool(self.menuSetting["MenuFreeze"]);
-    self FreezeControls(self.menuSetting["MenuFreeze"] ? true : false);
-}
-
-MenuStealth()
-{
-    self.menuSetting["MenuStealth"] = !bool(self.menuSetting["MenuStealth"]);
-}
-
-MenuGodmode()
-{
-    self.menuSetting["MenuGodmode"] = !bool(self.menuSetting["MenuGodmode"]);
-}
-
-ShowClientINFO()
-{
-    self.menuSetting["ShowClientINFO"] = !bool(self.menuSetting["ShowClientINFO"]);
-}
-
-MoveMenu()
-{
-    self menuClose();
-    
-    MenuVisTemp = [];
-    
-    MenuVisTemp["BG"] = self createRectangle("LEFT", "TOP", 0, 90, 170, int(7*15) + 45, (0,0,0), "white", 0, .6, true);
-    MenuVisTemp["TITLE"] = self createText("objective", 1.5, "CENTER", "TOP", -340, 95, 0, 1, "Menu Reposition", (1, 1, 1), true);
-    MenuVisTemp["INFO0"] = self createText("objective", 1.2, "CENTER", "TOP", -340, 120, 0, 1, "Movement Controls", (1, 1, 1), true);
-    MenuVisTemp["INFO1"] = self createText("objective", 1, "CENTER", "TOP", -340, 140, 0, 1, "UP - [{+attack}] DOWN - [{+speed_throw}]", (1, 1, 1), true);
-    MenuVisTemp["INFO2"] = self createText("objective", 1, "CENTER", "TOP", -340, 160, 0, 1, "LEFT - [{+smoke}] RIGHT - [{+frag}]", (1, 1, 1), true);
-    MenuVisTemp["INFO3"] = self createText("objective", 1, "CENTER", "TOP", -340, 180, 0, 1, "CONFIRM PLACEMENT - [{+activate}]", (1, 1, 1), true);
-    MenuVisTemp["INFO4"] = self createText("objective", 1, "CENTER", "TOP", -340, 200, 0, 1, "DISCARD CHANGES - [{+melee}]", (1, 1, 1), true);
-    
-    X = self.menuSetting["MenuX"];
-    Y = self.menuSetting["MenuY"];
-    
-    while(self useButtonPressed())
-        wait .05;
-    
-    while(!self meleeButtonPressed())
-    {
-        if(self attackButtonPressed())
-        {
-            Y += 10;
-            foreach(HUD in MenuVisTemp)
-                HUD.y += 10;
-                
-            wait .15;
-        }
-            
-        if(self adsButtonPressed())
-        {
-            Y -= 10;
-            foreach(HUD in MenuVisTemp)
-                HUD.y -= 10;
-                
-            wait .15;
-        }
-       
-        if(self FragButtonPressed())
-        {
-            X += 10;
-            foreach(HUD in MenuVisTemp)
-                HUD.x += 10;
-                
-            wait .15;
-        }
-            
-        if(self SecondaryOffhandButtonPressed())
-        {
-            X -= 10;
-            foreach(HUD in MenuVisTemp)
-                HUD.x -= 10;
-                
-            wait .15;
-        }
-        
-        if(self useButtonPressed())
-        {
-            self.menuSetting["MenuX"] = X;
-            self.menuSetting["MenuY"] = Y;
-            break;
-        }
-        
-        wait .05;
-    }
-    
-    while(self useButtonPressed() || self meleeButtonPressed())
-        wait .05;
-    
-    self destroyAll(MenuVisTemp);
-    self menuOpen();
-}
-
-MenuToggleRainbow(HUD)
-{
-    if(HUD == "Banner")
-    {
-        self.menuSetting[HUD + (bool(self.menuSetting["HUDEdit"]) ? "NoneRainbow" : "GradRainbow")] = (IsString(self.menuSetting[HUD + (bool(self.menuSetting["HUDEdit"]) ? "NoneRainbow" : "GradRainbow")]) ? 0 : "rainbow");
- 
-        if(!IsString(self.menuSetting[HUD + (bool(self.menuSetting["HUDEdit"]) ? "NoneRainbow" : "GradRainbow")]))
-        {
-            for(e=0;e<3;e++)
-                self.menuSetting[HUD + (bool(self.menuSetting["HUDEdit"]) ? "NoneColor" : "GradColor") + e] = level.rainbowColour[e];
-                
-            self.menuSetting[HUD + (bool(self.menuSetting["HUDEdit"]) ? "NoneRainbow" : "GradRainbow")] = "rainbow";
-        }
-        
-        if(IsString(self.menuSetting["BannerNoneRainbow"]))
-            self.menu["UI"]["BGTitle"] thread doRainbow(true);
-            
-        if(IsString(self.menuSetting["BannerGradRainbow"]))
-            self.menu["UI"]["BGTitle_Grad"] thread doRainbow(true);
-    } 
-    else
-    {
-        self.menuSetting[HUD + "GradRainbow"] = (IsString(self.menuSetting[HUD + "GradRainbow"]) ? 0 : "rainbow");
-  
-        if(!IsString(self.menuSetting[HUD + "GradRainbow"]))
-        {
-            for(e=0;e<3;e++)
-                self.menuSetting[HUD + "GradColor" + e] = level.rainbowColour[e];
-                
-            self.menuSetting[HUD + "GradRainbow"] = "rainbow";
-        }
-        
-        if(IsString(self.menuSetting["ScrollerGradRainbow"]))
-            self.menu["UI"]["SCROLL"] thread doRainbow(true);
-            
-        if(IsString(self.menuSetting["BackgroundGradRainbow"]))
-            self.menu["UI"]["OPT_BG"] thread doRainbow(true);
-    }
-}
-
-MenuPreSetCol(Val,HUD,Bool)
-{
-    Size    = (HUD == "Banner" ? 1 : 0);
-    SizeMax = (HUD == "Banner" ? 4 : 3);
-    menu    = self getCurrentMenu();
-    
-    if(!IsDefined(Bool))
-    {
-        RGB = GetPresetColours(Val);
-        for(e=Size;e<SizeMax;e++)
-            if(IsDefined(self.sliders[menu + "_" + e]))
-                self.sliders[menu + "_" + e] = undefined;
-    }
-    else
-    {
-        for(e=Size;e<SizeMax;e++)
-            if(!IsDefined(self.sliders[menu+"_"+e]))
-                self.sliders[menu + "_" + e] = 0;
-        
-        RGB = (HUD == "Banner" ? (self.sliders[menu + "_1"] / 255, self.sliders[menu + "_2"] / 255, self.sliders[menu+"_3"] / 255) : (self.sliders[menu + "_0"] / 255, self.sliders[menu + "_1"] / 255, self.sliders[menu + "_2"] / 255));
-    }
-   
-    if(HUD == "Background")
-    {
-        self.menu["UI"]["OPT_BG"] notify("StopRainbow");
-        self.menu["UI"]["OPT_BG"] thread fadeToColor(RGB, .5);
-    }
-        
-    if(HUD == "Scroller")
-    {
-        self.menu["UI"]["SCROLL"] notify("StopRainbow");
-        self.menu["UI"]["SCROLL"] thread fadeToColor(RGB, .5);
-    }
-        
-    if(HUD == "Banner")
-    {
-        SliderCheck = self.menuSetting[HUD + (bool(self.menuSetting["HUDEdit"]) ? "NoneRainbow" : "GradRainbow")];
-        
-        if(bool(self.menuSetting["HUDEdit"]))
-        {
-            self.menu["UI"]["BGTitle"] notify("StopRainbow");
-            self.menu["UI"]["BGTitle"] thread fadeToColor(RGB, .3);
-        }
-        else
-        {
-            self.menu["UI"]["BGTitle_Grad"] notify("StopRainbow");
-            self.menu["UI"]["BGTitle_Grad"] thread fadeToColor(RGB, .3);
-        }
-        
-        for(e=0;e<3;e++)
-            self.menuSetting[HUD + (bool(self.menuSetting["HUDEdit"]) ? "NoneColor" : "GradColor") + e] = RGB[e];
-            
-        self.menuSetting[HUD + (bool(self.menuSetting["HUDEdit"]) ? "NoneRainbow" : "GradRainbow")] = (RGB[0],RGB[1],RGB[2]);
-            
-        return;
-    }
-    
-    for(e=0;e<3;e++)
-        self.menuSetting[HUD + "GradColor" + e] = RGB[e];
-        
-    self.menuSetting[HUD + "GradRainbow"] = (RGB[0],RGB[1],RGB[2]);
-}
-
-drawMenu()
-{  
-    numOpts = ((self.eMenu.size >= 8) ? 8 : self.eMenu.size);
-    if(!isDefined(self.menu["UI"]))
-        self.menu["UI"] = [];
-    self.menu["UI"]["OPT_BG"] = self createRectangle("left", "top", 0, 90, 170, int(numOpts*15) + 45, self.menuSetting["BackgroundGradRainbow"], "white", 0, 1, true);
-    self.menu["UI"]["OPT_BG"] affectElement("alpha", .2, .6);
-    
-    self.menu["UI"]["BGTitle"] = self createRectangle("left", "top", 0, 90, 170, 30, self.menuSetting["BannerNoneRainbow"], "white", 1, 1, true);
-    self.menu["UI"]["BGTitle"] affectElement("alpha",.2,.6);
-    
-    self.menu["UI"]["BGTitle_Grad"] = self createRectangle("left", "top", 0, 90, 170, 30, self.menuSetting["BannerGradRainbow"], "white", 3, 0, true);
-    self.menu["UI"]["BGTitle_Grad"] affectElement("alpha", .2, .6);
-    
-    self.menu["UI"]["CUR_TITLE"] = self createRectangle("left", "center", 0, -112, 170, 15, (0, 0, 0), "white", 4, 0, true);
-    self.menu["UI"]["CUR_TITLE"] affectElement("alpha",.2, 1);
-    
-    self.menu["UI"]["SCROLL"] = self createRectangle("left", "top", 0, -5, 170, 16, self.menuSetting["ScrollerGradRainbow"], "white", 3, 0, true);
-    self.menu["UI"]["SCROLL"] affectElement("alpha", .2, .6);
-}
-
-drawText()
-{
-    numOpts = ((self.eMenu.size >= 8) ? 8 : self.eMenu.size);
-    if(!isDefined(self.menu["OPT"]))
-        self.menu["OPT"] = [];
-    if(!IsDefined(self.menu["OPT"]["OPTScroll"]))
-        self.menu["OPT"]["OPTScroll"] = [];
-    self.menu["OPT"]["TITLE"] = self createText("objective", 1.5, "CENTER", "TOP", -340, 95, 10, 0, "YetAnotherModMenu", (1, 1, 1), true);
-    self.menu["OPT"]["TITLE"] affectElement("alpha",.4,1);
-    
-    self.menu["OPT"]["SUB_TITLE"] = self createText("objective", .75, "CENTER", "TOP", -340, 120, 10, 0, self.menuTitle, (1, 1, 1), true);
-    self.menu["OPT"]["SUB_TITLE"] affectElement("alpha", .4, 1);
-    
-    self.menu["OPT"]["OPTSize"] = self createText("objective", .75, "center", "TOP", -270, 120, 10, 0, self getCursor() + 1 + "/" + self.eMenu.size, (1, 1, 1), true);
-    self.menu["OPT"]["OPTSize"] affectElement("alpha",.4, 1);
-    
-    for(e=0;e<8;e++)
-    {
-        self.menu["OPT"][e] = self createText("objective", 1, "left", "TOP", 5, 132 + e*15, 4, 1, "", (1, 1, 1), true);
-        self.menu["OPT"][e] affectElement("alpha",.4, 1);
-    }
-
-    self setMenuText();
-}
-
-setMenuText()
-{
-    ary = (self getCursor() >= 8 ? self getCursor()-7 : 0);
-    for(e=0;e<8;e++)
-    {
-        if(IsDefined(self.menu["OPT"]["OPTScroll"][e]))
-            self.menu["OPT"]["OPTScroll"][e] destroy();
-        
-        if(isDefined(self.menu["OPT"][e]))
-        {
-            self.menu["OPT"][e].color = ((isDefined(self.eMenu[ary + e].toggle) && self.eMenu[ary + e].toggle) ? (0, 1, 0) : (1, 1, 1));
-            self.menu["OPT"][e] setText(self.eMenu[ary + e].opt);
-        }
-        if(IsDefined(self.eMenu[ary + e].val)){
-            self.menu["OPT"]["OPTScroll"][e] = self createText("objective", 1, "center", "TOP", -285, 132 + e*15, 5, 1, "" + ((!isDefined(self.sliders[self getCurrentMenu() + "_" + (ary + e)])) ? self.eMenu[ary + e].val : self.sliders[self getCurrentMenu() + "_" + (ary + e)]), (1, 1, 1), true);
-        }
-        if(IsDefined(self.eMenu[ary + e].optSlide)){
-            self.menu["OPT"]["OPTScroll"][e] = self createText("objective", 1, "center", "TOP", -285, 132 + e*15, 5, 1, ((!isDefined(self.Optsliders[self getCurrentMenu() + "_" + (ary + e)])) ? self.eMenu[ary + e].optSlide[0] + " [" + 1 + "/" + self.eMenu[ary + e].optSlide.size + "]" : self.eMenu[ary + e].optSlide[self.Optsliders[self getCurrentMenu() + "_" + (ary + e)]] + " [" + ((self.Optsliders[self getCurrentMenu() + "_" + (ary + e)])+1) + "/" + self.eMenu[ary + e].optSlide.size + "]"), (1, 1, 1), true);
-        }
-    }
-}
-
-resizeMenu()
-{
-    numOpts = ((self.eMenu.size >= 8) ? 8 : self.eMenu.size);
-    self.menu["UI"]["OPT_BG"] setShader("white", 170, int(numOpts*15) + 45);
-}
-
-refreshTitle()
-{
-    self.menu["OPT"]["SUB_TITLE"] setText(self.menuTitle);
-}
-
-refreshOPTSize()
-{
-    self.menu["OPT"]["OPTSize"] setText(self getCursor() + 1 + "/" + self.eMenu.size);
-}
-
-menuMonitor()
-{
-    self endon("disconnect");
-    self endon("end_menu");
-    while(self.access != 0)
-    {
-        if(!self.menu["isLocked"])
-        {
-            if(!self.menu["isOpen"])
-            {
-                if(self meleeButtonPressed() && self adsButtonPressed())
-                {
-                    self playLocalSound("ww_magicbox_laughter");
-                    self menuOpen();
-                    wait .2;
-                }
-            }
-            else
-            {
-                if((self attackButtonPressed() || self adsButtonPressed()))
-                {
-                    CurrentCurs = self getCurrentMenu() + "_cursor";
-
-                    self.menu[CurrentCurs]+= self attackButtonPressed();
-                    self.menu[CurrentCurs]-= self adsButtonPressed();
-                
-                    self scrollingSystem();
-                    self PlayLocalSound("mouse_over");
-                    wait .2;
-                }
-            
-                if(self FragButtonPressed() || self SecondaryOffhandButtonPressed())
-                {
-                    Menu = self.eMenu[self getCursor()];
-                    if(self SecondaryOffhandButtonPressed())
-                    {
-                        if(IsDefined(Menu.optSlide))
-                        {
-                            self updateOptSlider("L2");
-                            Func = self.Optsliders;
-                        }
-                        else if(IsDefined(Menu.val))
-                        {
-                            self updateSlider("L2");
-                            Func = self.sliders;
-                        }
-                    }
-                    if(self FragButtonPressed())
-                    {
-                        if(IsDefined(Menu.optSlide))
-                        {
-                            self updateOptSlider("R2");
-                            Func = self.Optsliders;
-                        }
-                        else if(IsDefined(Menu.val))
-                        {
-                            self updateSlider("R2");
-                            Func = self.sliders;
-                        }
-                    }
-
-                    if(IsDefined(Menu.toggle))
-                        self UpdateCurrentMenu();
-                  
-                    wait .12;
-                }
-            
-                if(self useButtonPressed())
-                {
-                    Menu = self.eMenu[self getCursor()];
-                    self PlayLocalSound("ui_consumable_meter_full");
-                
-                    if(IsDefined(self.sliders[self getCurrentMenu() + "_" + self getCursor()])){
-                        slider = self.sliders[ self getCurrentMenu() + "_" + self getCursor() ];
-                        slider = (IsDefined( menu.List1 ) ? menu.List1[slider] : slider);
-                        self thread doOption(Menu.func, slider, Menu.p1, Menu.p2, Menu.p3,menu.p4,menu.p5);
-                    }
-                    else if(IsDefined(self.Optsliders[self getCurrentMenu() + "_" + self getCursor()]))
-                        self thread doOption(Menu.func, self.Optsliders[self getCurrentMenu() + "_" + self getCursor()], Menu.p1, Menu.p2, Menu.p3);
-                    
-                    else
-                        self thread doOption(Menu.func, Menu.p1, Menu.p2, Menu.p3, Menu.p4, Menu.p5, Menu.p6);
-                    
-                    if(IsDefined(Menu.toggle))
-                        self UpdateCurrentMenu();
-                    
-                    wait .2;
-                }
-            
-                if(self meleeButtonPressed())
-                {
-                    if(self getCurrentMenu() == "main")
-                        self menuClose();
-                    else
-                        self newMenu();
-                    
-                    wait .2;
-                }
-            }
-            wait .05;
-        }
-        wait .05;
-    }
-}
-
-doOption(func, p1, p2, p3, p4, p5, p6)
-{
-    if(!isdefined(func))
-        return;
-    if(isdefined(p6))
-        self thread [[func]](p1,p2,p3,p4,p5,p6);
-    else if(isdefined(p5))
-        self thread [[func]](p1,p2,p3,p4,p5);
-    else if(isdefined(p4))
-        self thread [[func]](p1,p2,p3,p4);
-    else if(isdefined(p3))
-        self thread [[func]](p1,p2,p3);
-    else if(isdefined(p2))
-        self thread [[func]](p1,p2);
-    else if(isdefined(p1))
-        self thread [[func]](p1);
-    else
-        self thread [[func]]();
-}
-
-scrollingSystem()
-{
-    menu = self getCurrentMenu() + "_cursor";
-    curs = self getCursor();
-    if(curs >= self.eMenu.size || curs <0 || curs == 7 || curs >= 8)
-    {
-        if(curs <= 0)
-            self.menu[menu] = self.eMenu.size -1;
-            
-        if(curs >= self.eMenu.size)
-            self.menu[menu] = 0;
-            
-        self setMenuText();
-    }
-    self updateScrollbar();
-    self refreshOPTSize();
-}
-
-updateScrollbar()
-{
-    curs = ((self getCursor() >= 8) ? 7 : self getCursor());
-    self.menu["UI"]["SCROLL"].y = (self.menu["OPT"][0].y + (curs*15));
-    if(IsDefined(self.eMenu[self getCursor()].val))
-        self updateSlider();
-        
-    if(IsDefined(self.eMenu[self getCursor()].optSlide))
-        self updateOptSlider();
-    if(self getCurrentMenu() == "Clients")
-        self.SavePInfo = level.players[self getCursor()];
-}
-
-newMenu(menu, Access)
-{
-    if(IsDefined(Access) && self.access < Access)
-        return;
-        
-    if(!isDefined(menu))
-    {
-        menu = self.previousMenu[self.previousMenu.size-1];
-        self.previousMenu[self.previousMenu.size-1] = undefined;
-    }
-    else
-        self.previousMenu[self.previousMenu.size] = self getCurrentMenu();
-    self setCurrentMenu(menu);    
-    self menuOptions();
-    self setMenuText();
-    self refreshTitle();
-    self resizeMenu();
-    self UpdateCurrentMenu();
-    self refreshOPTSize();
-    self updateScrollbar();
-}
-
-isMenuOpen()
-{
-    if( !isDefined(self.menu["isOpen"]) || !self.menu["isOpen"] )
-        return false;
-    return true;
-}
-
-lockMenu(which)
-{
-    if(toLower(which) == "lock")
-    {
-        if(self isMenuOpen())
-            self menuClose();
-        self.menu["isLocked"] = true;
-    }
-    else if (toLower(which) == "unlock")
-    {
-        if(!self isMenuOpen())
-            self menuOpen();
-        self.menu["isLocked"] = false;
-    }
-}
-
-addMenu(menu, title)
-{
-    self.storeMenu = menu;
-    if(self getCurrentMenu() != menu)
-        return;
-    self.eMenu     = [];
-    self.menuTitle = title;
-    if(!isDefined(self.menu[menu + "_cursor"]))
-        self.menu[menu + "_cursor"] = 0;
-}
-
-addOpt(opt, func, p1, p2, p3, p4, p5, p6)
-{
-    if(self.storeMenu != self getCurrentMenu())
-        return;
-    option      = spawnStruct();
-    option.opt  = opt;
-    option.func = func;
-    option.p1   = p1;
-    option.p2   = p2;
-    option.p3   = p3;
-    option.p4   = p4;
-    option.p5   = p5;
-    option.p6   = p6;
-    self.eMenu[self.eMenu.size] = option;
-}
-
-addToggleOpt(opt, func, toggle, p1, p2, p3, p4, p5, p6)
-{
-    if(self.storeMenu != self getCurrentMenu())
-        return;
-    if(!IsDefined(toggle))
-        toggle = false;
-    toggleOpt        = spawnStruct();
-    toggleOpt.opt    = opt;
-    toggleOpt.func   = func;
-    toggleOpt.toggle = (IsDefined(toggle) && toggle);
-    toggleOpt.p1     = p1;
-    toggleOpt.p2     = p2;
-    toggleOpt.p3     = p3;
-    toggleOpt.p4     = p4;
-    toggleOpt.p5     = p5;
-    toggleOpt.p6     = p6;
-    self.eMenu[self.eMenu.size] = toggleOpt;
-}
-
-addSlider(opt, val, min, max, inc, func, toggle, autofunc, p1, p2, p3)
-{
-    if(self.storeMenu != self getCurrentMenu())
-        return;
-    if(!IsDefined(toggle))
-        toggle = false;
-    slider          = SpawnStruct();
-    slider.opt      = opt;
-    slider.val      = val;
-    slider.min      = min;
-    slider.max      = max;
-    slider.inc      = inc;
-    slider.func     = func;
-    slider.toggle   = (IsDefined(toggle) && toggle);
-    slider.autofunc = autofunc;
-    slider.p1       = p1;
-    slider.p2       = p2;
-    slider.p3       = p3;
-    self.eMenu[self.eMenu.size] = slider;
-}
-
-addOptSlider(opt, strTok, func, toggle, autofunc, p1, p2, p3)
-{
-    if(self.storeMenu != self getCurrentMenu())
-        return;
-    if(!IsDefined(toggle))
-        toggle = false;
-    Optslider          = SpawnStruct();
-    Optslider.opt      = opt;
-    Optslider.optSlide = strTok(strTok, "|");
-    Optslider.func     = func;
-    Optslider.toggle   = (IsDefined(toggle) && toggle);
-    Optslider.autofunc = autofunc;
-    Optslider.p1       = p1;
-    Optslider.p2       = p2;
-    Optslider.p3       = p3;
-    self.eMenu[self.eMenu.size] = Optslider;
-}
-
-addSliderWithString(opt, List1, List2, func, p1, p2, p3, p4, p5)
-{
-    if(self.storeMenu != self getCurrentMenu())
-        return;
-    optionlist = spawnstruct();
-    if(!isDefined(List2))
-        List2 = List1;
-    optionlist.List1 = (IsArray(List1)) ? List1 : strTok(List1, ";");
-    optionlist.List2 = (IsArray(List2)) ? List2 : strTok(List2, ";");
-    optionlist.opt = opt;
-    optionlist.func = func;
-    optionlist.p1   = p1;
-    optionlist.p2   = p2;
-    optionlist.p3   = p3;
-    optionlist.p4   = p4;
-    optionlist.p5   = p5;
-    self.eMenu[self.eMenu.size] = optionlist;
-}
-
-updateSlider(pressed) 
-{
-    Menu = self.eMenu[self getCursor()];
-    if(!IsDefined(self.sliders[self getCurrentMenu() + "_" + self getCursor()]))
-        self.sliders[self getCurrentMenu() + "_" + self getCursor()] = self.eMenu[self getCursor()].val;
-        
-    curs = self.sliders[self getCurrentMenu() + "_" + self getCursor()];
-    if(pressed == "R2")
-        curs += Menu.inc;
-    if(pressed == "L2")
-        curs -= Menu.inc;
-    if(curs > Menu.max)
-        curs = Menu.min;
-    if(curs < Menu.min)
-        curs = Menu.max;
-    
-    
-    cur = ((self getCursor() >= 8) ? 7 : self getCursor());
-    if(curs != Menu.val)
-        self.menu["OPT"]["OPTScroll"][cur] setText("" + curs);
-    self.sliders[self getCurrentMenu() + "_" + self getCursor()] = curs;
-}
-
-updateOptSlider(pressed)
-{
-    Menu = self.eMenu[self getCursor()];
-    
-    if(!IsDefined(self.Optsliders[self getCurrentMenu() + "_" + self getCursor()]))
-        self.Optsliders[self getCurrentMenu() + "_" + self getCursor()] = 0;
-        
-    curs = self.Optsliders[self getCurrentMenu() + "_" + self getCursor()];
-    
-    if(pressed == "R2")
-        curs ++;
-    if(pressed == "L2")
-        curs --;               
-    if(curs > Menu.optSlide.size-1)
-        curs = 0;
-    if(curs < 0)
-        curs = Menu.optSlide.size-1;
-
-    cur = ((self getCursor() >= 8) ? 7 : self getCursor());
-    self.menu["OPT"]["OPTScroll"][cur] setText(Menu.optSlide[curs] + " [" + (curs+1) + "/" + Menu.optSlide.size + "]");
-    self.Optsliders[self getCurrentMenu() + "_" + self getCursor()] = curs;
-}
-
-setCurrentMenu(menu)
-{
-    self.menu["current"] = menu;
-}
-
-getCurrentMenu()
-{
-    return self.menu["current"];
-}
-
-getCursor()
-{
-    return self.menu[self getCurrentMenu()+ "_cursor"];
-}
-
-hasMenu()
-{
-    return (isDefined(self.access) && self.access != 0 ? true : false);
-}
-
-UpdateCurrentMenu()
-{
-    self setCurrentMenu(self getCurrentMenu());
-    self menuOptions();
-    self setMenuText();
-    self updateScrollbar();
-    self resizeMenu();
-    self refreshOPTSize();
-}
-
-menuOpen()
-{
-    ary = (self getCursor() >= 8 ? self getCursor()-7 : 0);
-    self.menu["isOpen"] = true;
-    if(bool(self.menuSetting["MenuFreeze"]))
-        self FreezeControls(true);
-    self menuOptions();
-    self drawText();
-    self drawMenu();
-    self updateScrollbar();
-    for(e=0;e<8;e++)
-    {
-        if(IsDefined(self.eMenu[ary + e].val) || IsDefined(self.eMenu[ary + e].optSlide))
-        {
-            self.menu["OPT"]["OPTScroll"][e].alpha = 0;
-            self.menu["OPT"]["OPTScroll"][e] affectElement("alpha", .4, 1);
-        }
-    }
-}
-
-menuClose()
-{
-    self.menu["isOpen"] = false;
-    if(bool(self.menuSetting["MenuFreeze"]))
-        self FreezeControls(false);
-    self destroyAll(self.menu["UI"]);
-    self destroyAll(self.menu["OPT"]);
-    self destroyAll(self.menu["OPT"]["OPTScroll"]);
-}
-
-onPlayerDisconnect(player)
-{
-    self notify("StopPMonitor");
-    self endon("StopPMonitor");
-    self endon("end_menu");
-    self endon("disconnect");
-    player waittill("disconnect");
-    while(self getCurrentMenu() != "Clients")
-        self newMenu();
-    self setcursor(0, self getCurrentMenu());
-    self UpdateCurrentMenu();
-}
-
-setcursor(value, menu)
-{
-    self.menu[menu + "_cursor"] = value;
-}
-
-menuOptions()
-{    
-    switch(self getCurrentMenu())
-    {
-        case "main":
-            self addMenu("main", "Main Menu");
-            self addOpt("Personal Modifications", ::newMenu, "Personal Modifications");
-            if(self.access >= 1){//verified stuff
-            self addOpt("Menu Customization", ::newMenu, "Menu Customisation", 1);
-            self addOpt("Profile Manipulation", ::newMenu, "Profile Manipulation", 1);
-            }
-            if(self.access >= 2){
-            self addOpt("Weapon Manipulation", ::newMenu, "Weapon Manipulation", 2);
-            self addOpt("Lobby Manipulation", ::newMenu, "Lobby Manipulation", 2);
-            self addOpt("Fun Modifications", ::newMenu, "Fun Menu", 2);
-            self addOpt(GetTehMap()+" Options", ::newMenu, GetTehMap());
-            }
-            if (self.access >= 3){
-            self addOpt("Clients [^2" + level.players.size + "^7]", ::newMenu, "Clients",4);
-            self addOpt("All Clients", ::newMenu, "AllClients",4);
-            }
-            if(self IsHost()){ self addOpt("Host Debug Menu", ::newMenu, "Host Debug");
-            self addOpt("GameModes", ::newMenu, "GameModes");}
-            break;
-        case "Personal Modifications":
-            self addMenu("Personal Modifications", "Personal Modifications");
-            self addToggleOpt("Toggle God Mode", ::Godmode, self.godmode);
-            self addToggleOpt("Toggle No Clip", ::no_clip, self.noclip);
-            self addToggleOpt("Toggle Infinite Ammo", ::ToggleAmmo, self.UnlimAmmo);
-            self addOpt("Score Menu", ::newMenu, "Score Menu");
-            self addOpt("Random Teleport", ::ActivateFAF, "anywhere_but_here", self);
-            self addOpt("Give All Perks", ::AllPerks, self);
-            self addSlider("Edit Movement Speed", 0,0,15,1,::EditSpeed);
-            self addToggleOpt("Toggle Speed Change", ::SpeedToggle, self.speedToggle);
-            break;
-        case "Score Menu":
-            self addMenu("Score Menu", "Score Menu");
-            self addSlider("Add Score", self getplayerdata("cp","alienSession","currency"), 0, self.var_B48A, 1000, ::AddScore, undefined, undefined, self);
-            self addSlider("Remove Score", self getplayerdata("cp","alienSession","currency"), 0, self.var_B48A, 1000, ::TakeScore, undefined, undefined, self);
-            self addOpt("Max Out Score", ::MaxScore, self);
-            break;
-        case "Menu Customisation":
-            self addMenu("Menu Customisation", "Menu Customisation");
-                self addOpt("Menu Colours", ::newMenu, "MenuColour");
-                self addOpt("Reposition Menu", ::MoveMenu);
-            break;
-        case "MenuColour":
-            self addMenu("MenuColour", "Menu Colours");
-                self addOpt("Background", ::newMenu, "BackgroundColour");
-                self addOpt("Banner", ::newMenu, "BannerColour");
-                self addOpt("Scroller", ::newMenu, "ScrollerColour");
-            break;
-        case "BackgroundColour":
-            self addMenu("BackgroundColour", "Menu Background");
-            for(e=0;e<3;e++){
-                    self addSlider(level.RGB[e] + " Slider", 0, 0, 255, 10, ::MenuPreSetCol, undefined, true, "Background", true);
-                }
-                self addOptSlider("Colour Presets", GetColoursSlider(), ::MenuPreSetCol, undefined, true, "Background");
-                self addToggleOpt("Rainbow Fade", ::MenuToggleRainbow, IsString(self.menuSetting["BackgroundGradRainbow"]), "Background");
-            break;
-            
-        case "BannerColour":
-            self addMenu("BannerColour", "Menu Banner");
-            for(e=0;e<3;e++){
-                    self addSlider(level.RGB[e] + " Slider", 0, 0, 255, 10, ::MenuPreSetCol, undefined, true, "Banner", true);
-                    }
-                self addOptSlider("Colour Presets", GetColoursSlider(),::MenuPreSetCol, undefined, true, "Banner");
-                self addToggleOpt("Rainbow Fade", ::MenuToggleRainbow, bool(self.menuSetting["HUDEdit"]) ? IsString(self.menuSetting["BannerNoneRainbow"]) : IsString(self.menuSetting["BannerGradRainbow"]), "Banner");
-            break;
-            
-        case "ScrollerColour":
-            self addMenu("ScrollerColour", "Menu Scroller");
-            for(e=0;e<3;e++){
-                    self addSlider(level.RGB[e] + " Slider", 0, 0, 255, 10, ::MenuPreSetCol, undefined, true, "Scroller", true);
-                    }
-                self addOptSlider("Colour Presets", GetColoursSlider(), ::MenuPreSetCol, undefined, true, "Scroller");
-                self addToggleOpt("Rainbow Fade", ::MenuToggleRainbow, IsString(self.menuSetting["ScrollerGradRainbow"]), "Scroller");
-            break;
-        case "Weapon Manipulation":
-            self addMenu("Weapon Manipulation", "Weapon Manipulation");
-                self addOpt("Weapon Selection", ::newMenu, "Weapon Selection");
-                self addOpt("Pillaged Loot", ::newMenu, "Pillaged Loot");
-            break;
-        case "Pillaged Loot":
-            self addMenu("Pillaged Loot", "Pillaged Loot");
-                for(i=0;i<level.pickupLootName.size;i++)
-                    self addOpt("Give "+level.pickupLootName[i], ::givePillagedLoot, level.pickupLoot[i]);
-            break;
-        case "Weapon Selection":
-            self addMenu("Weapon Selection", "Weapon Selection");
-                for(e=0;e<level.WeaponCategories.size;e++)
-                self addOpt(level.WeaponCategories[e], ::newMenu, level.WeaponCategories[e] );
-            break;
-        case "Assault Rifles":
-            self addMenu(level.WeaponCategories[0], "Assault Rifles");
-                for(i=0;i<level.ARNames.size;i++){
-                    self addOpt(level.ARNames[i], ::GiveWeaponToPlayer, level.Assault[i], self);
-                }
-            break;        
-        case "Sub Machine Guns":
-            self addMenu(level.WeaponCategories[1], "Sub Machine Guns");
-                for(i=0;i<level.SMGNames.size;i++){
-                    self addOpt(level.SMGNames[i], ::GiveWeaponToPlayer, level.SMG[i], self);
-                }
-            break;
-        case "Shotguns":
-            self addMenu(level.WeaponCategories[4], "Shotguns");
-                for(i=0;i<level.ShotgunNames.size;i++){
-                    self addOpt(level.ShotgunNames[i], ::GiveWeaponToPlayer, level.Shotguns[i], self);
-                }
-            break;
-        case "Light Machine Guns":
-            self addMenu(level.WeaponCategories[2], "Light Machine Guns");
-                for(i=0;i<level.LMGNames.size;i++){
-                    self addOpt(level.LMGNames[i], ::GiveWeaponToPlayer, level.LMG[i], self);
-                }
-            break;
-        case "Sniper Rifles":
-            self addMenu(level.WeaponCategories[3], "Sniper Rifles");
-                for(i=0;i<level.SniperNames.size;i++){
-                    self addOpt( level.SniperNames[i], ::GiveWeaponToPlayer, level.Snipers[i], self ); 
-                }
-            break;
-        case "Launchers":
-            self addMenu(level.WeaponCategories[6], "Launchers");
-                for(i=0;i<level.LauncherNames.size;i++){
-                    self addOpt( level.LauncherNames[i], ::GiveWeaponToPlayer, level.Launchers[i], self ); 
-                }
-            break;
-        case "Pistols":
-            self addMenu(level.WeaponCategories[5], "Pistols");
-                for(i=0;i<level.PistolNames.size;i++){
-                    self addOpt( level.PistolNames[i], ::GiveWeaponToPlayer, level.Pistols[i], self );
-                    }
-            break;
-        case "Classic Weapons":
-            self addMenu(level.WeaponCategories[7], "Classic Weapons");
-                for(i=0;i<level.ClassicNames.size;i++){
-                    self addOpt(level.ClassicNames[i], ::GiveWeaponToPlayer, level.Classics[i], self);
-                }
-            break;
-        case "Melee Weapons":
-            self addMenu(level.WeaponCategories[8], "Melee Weapons");
-            for(i=0;i<level.MeleeNames.size;i++){
-                self addOpt(level.MeleeNames[i], ::GiveWeaponToPlayer, level.Melee[i], self);
-            }
-            break;
-        case "Specialist Weapons":
-            self addMenu(level.WeaponCategories[9], "Specialist Weapons");
-                for(i=0;i<level.SpecialNames.size;i++){
-                    self addOpt(level.SpecialNames[i], ::GiveWeaponToPlayer, level.Specials[i], self);
-                }
-            break;
-        case "Map Specific Weapons":
-            self addMenu(level.WeaponCategories[10], "Map Specific Weapons");
-                if(level.mapName == "cp_zmb"){
-                    for(i=0;i<level.SpacelandNames.size;i++){
-                        self addOpt(level.SpacelandNames[i], ::GiveWeaponToPlayer, level.SpacelandWeaps[i], self);
-                    }
-                }
-                else if(level.mapName == "cp_rave"){
-                    for(i=0;i<level.RaveNames.size;i++){
-                        self addOpt(level.RaveNames[i], ::GiveWeaponToPlayer, level.RaveWeaps[i], self);
-                    }
-                }
-                else if(level.mapName == "cp_disco"){
-                    for(i=0;i<level.ShaolinNames.size;i++){
-                        self addOpt(level.ShaolinNames[i], ::GiveWeaponToPlayer, level.ShaolinWeaps[i], self);
-                    }
-                }
-                else if(level.mapName == "cp_town"){
-                    for(i=0;i<level.AttackNames.size;i++){
-                        self addOpt(level.AttackNames[i], ::GiveWeaponToPlayer, level.AttackWeaps[i], self);
-                    }
-                }
-                else if(level.mapName == "cp_final")
-                {
-                    for(i=0;i<level.BeastNames.size;i++){
-                        self addOpt(level.BeastNames[i], ::GiveWeaponToPlayer, level.BeastWeaps[i], self);
-                    }
-                }
-            break;
-        case "Other Weapons":
-            self addMenu(level.WeaponCategories[11], "Other Weapons");
-                for(i=0;i<level.OtherNames.size;i++){
-                    self addOpt(level.OtherNames[i], ::GiveWeaponToPlayer, level.otherWeaps[i], self);
-                }
-            break;
-        case "Lobby Manipulation":
-            self addMenu("Lobby Manipulation", "Lobby Manipulation");
-                self addOpt("Max Bank Amount", ::MaxBank);
-                self addOpt("Zombies Options", ::newMenu, "Zombies Options");
-                if(level.script != "cp_town")
-                {
-                    self addOpt("Open All Doors", ::ClearDoorsAndDebris);
-                    self addOpt("Turn On Power", ::TurnOnPower);
-                }
-                self addSlider("Edit Round", level.wave_num,1,999,1,::EditRound);
-                self addOpt("Max Round", ::MaxRound);
-                self addToggleOpt("Freeze the Wheel", ::NoMovingWheel, level.noMoveBox);
-                self addToggleOpt("Toggle Force Host", ::ToggleForceHost, self.ForcingHost);
-                break;
-        case "Zombies Options":
-            self addMenu("Zombies Options", "Zombies Options");
-                self addOpt("Kill All Zombies", ::killAllZombies);
-                self addToggleOpt("Toggle Outlines", ::outline_zombies, self.outline_zombies);
-                self addOpt("Rainbow Outlines", ::RainbowOutlines);
-                self addSlider("Set Outline Color", self.outline_color,0,5,1,::ChangeOutlineColor);
-                self addToggleOpt("One Shot Zombies", ::oneShotKillZombies, self.oneShotKillZombies);
-                self addToggleOpt("Freeze Zombies", ::freezeZombies, self.freezeZombies);
-            break;
-        case "Profile Manipulation":
-            self addMenu("Profile Manipulation", "Profile Manipulation");
-                self addOpt("Complete All Challenges", ::CompleteChallenges, self);
-                self addOpt("Complete Contracts", ::CompleteActiveContracts, self);
-                self addSlider("Edit Rank",0, 0,999,1,::SetPlayerRank, undefined, undefined, self);
-                self addOpt("Unlock Directors Cut", ::UnlockDC, self);
-                self addOpt("Unlock All Talismans", ::UnlockTalismans, self);
-                self addOpt("Give Soul Keys", ::SoulKeyUnlock, self);
-            break;
-        case "Fun Menu":
-            self addMenu("Fun Menu", "Fun Modifications");
-                self addToggleOpt("Toggle Kill Aura", ::ToggleKillAura, self.killAura, self);
-                self addOpt("Sky Trip", ::skyTrip);
-            break;
-        case "Zombies in Spaceland":
-            self addMenu("Zombies in Spaceland", "Zombies in Spaceland");
-                self addSlider("Give Tickets", 50,50,950, 50, ::GiveTickets);
-                self addOpt("Quest Options", ::newMenu, "SLQuests");
-                self addOpt("Trigger MW1 Song", ::PlayAudioToClients, "mus_pa_mw1_80s_cover");
-                self addOpt("Trigger MW2 Song", ::PlayAudioToClients, "mus_pa_mw2_80s_cover");
-                self addOpt("Activate Ghosts N Skulls", ::CompleteGnS);
-                self addOpt("Play Knight Rider", ::PlayAudioToClients, "mus_pa_sp_knightrider");
-                self addOpt("Play Scattered Lies", ::PlayAudioToClients, "mus_pa_final_hidden_track");
-            break;
-        case "SLQuests":
-            self addMenu("SLQuests", "Quest Options");
-                self addOptSlider("Grab Neil Part","Head|Battery|Firmware", ::GetNeilPart);
-                self addOpt("Grab SetiCom Parts", ::GrabSetiComParts);
-                self addOpt("Take the Seticom", ::GrabTheSeticom);
-                self addOpt("Get The Speakers", ::GetThoseSpeakers);
-            break;
-        case "Rave in the Redwoods":
-            self addMenu("Rave in the Redwoods", "Rave in the Redwoods");
-            self addOpt("Play Puppet Strings", ::PlayAudioToClients, "mus_pa_rave_hidden_track");
-                self addOpt("Activate Ghosts N Skulls", ::CompleteGnS);
-            break;
-        case "Shaolin Shuffle":
-            self addMenu("Shaolin Shuffle", "Shaolin Shuffle");
-                self addOpt("Play Beat of the Drum", ::PlayAudioToClients, "mus_pa_disco_hidden_track");
-                self addOpt("Complete Kung Fu", ::CompleteAllKungFu, self);
-                self addOpt("Activate Ghosts N Skulls", ::CompleteGnS);
-            break;
-
-        case "Radioactive Thing":
-            self addMenu("Radioactive Thing", "Attack of the Radioactive Thing");
-                self addOpt("Play Brackyura boogie", ::PlayAudioToClients, "mus_pa_town_hidden_track");
-                self addOpt("Activate Ghosts N Skulls", ::CompleteGnS);
-            break;
-        case "Beast from Beyond":
-            self addMenu("Beast from Beyond", "Beast from Beyond");
-                self addOpt("Play Scattered Lies", ::PlayAudioToClients, "mus_pa_final_hidden_track");
-                self addOpt("Activate Ghosts N Skulls", ::CompleteGnS);
-            break;
-        case "AllClients":
-            self addMenu("AllClients", "All Client Options");
-                self addOpt("All God Mode", ::AllClientHandler, 1);
-                self addOpt("All No Clip", ::AllClientHandler, 2);
-                self addOpt("All Infinite Ammo", ::AllClientHandler, 3);
-                self addOpt("All Max Score", ::AllClientHandler, 4);
-                self addOpt("Give everyone Perks", ::AllClientHandler, 5);
-                self addOpt("Give All Kill Aura", ::AllClientHandler, 6);
-                self addOpt("Send All To Jail", ::AllClientHandler, 7);
-                self addOpt("Free All from Jail", ::AllClientHandler, 8);
-            break;
-        case "AllAccess":
-            self addMenu("AllAccess", "Verification Level");
-                for(e=0;e<level.Status.size-1;e++)
-                    self addOpt(level.Status[e], ::AllPlayersAccess, e);
-            break;
-        case "GameModes":
-            self addMenu("GameModes", "Gamemodes");
-                self addOpt("Mod Menu Lobby", ::newMenu, "ModLobbyOpt");
-                self addOpt("Old School Stat Lobby", ::GameModeSwitcher, undefined, "OldSchool");
-            break;
-        case "ModLobbyOpt":
-            self addMenu("ModLobbyOpt", "Menu Lobby Options");
-                self addOpt("Mod Menu Lobby [All Verified]", ::GameModeSwitcher, "Verified", "ModMenu");
-                self addOpt("Mod Menu Lobby [All VIP]", ::GameModeSwitcher, "VIP", "ModMenu");
-                self addOpt("Mod Menu Lobby [All Admin]", ::GameModeSwitcher, "Admin", "ModMenu");
-                self addOpt("Mod Menu Lobby [All Co-Host]", ::GameModeSwitcher, "Co-Host", "ModMenu");
-            break;
-        case "Host Debug":
-            self addMenu("Host Debug", "Host Debug Settings");
-            self addOpt("Fast Restart", ::FastRestartGame);
-            self addOpt("End The Game", ::EndGameHost);
-            self addOpt("Print Coords", ::PrintCoords);
-            self addSlider("Set XP Scale",getdvarint("online_zombies_xpscale"),1,99,1,::SetXPScale);
-            self addSlider("Set Lobby Timer",level.TimerTime,1,99,1,::setLobbyTimer);
-            self addOpt("Start Timed Lobby", ::startLobbyTimer);
-            break;
-        default:
-            self ClientOptions();
-            break;
-    }
-}
-
-ClientOptions()
-{
-    player = self.SavePInfo;
-    Name   = player getName();
-    switch(self getCurrentMenu())
-    {
-         case "Clients":
-            self addmenu("Clients","Clients [^2" + level.players.size + "^7]");
-            foreach(Client in level.players)
-                self addopt(Client getName(), ::newmenu, "PMain");
-            break;
-            
-        case "PMain":
-            self addmenu("PMain", Name);
-            self addOpt("Verification Level", ::newMenu, "PAccess");
-            self addOpt("Personal Modifications", ::newMenu, "Personal Modifications Client");
-            self addOpt("Stat Manipulation", ::newMenu, "Stat Manipulation Client");
-            self addOpt("Trolling Options", ::newMenu, "Trolling Options");
-            self addOpt("Equipment and Weapons", ::newMenu, "Equip Weaps Client");
-            self addOpt("Testing Keys", ::KeyGiving);
-            break;
-        case "Personal Modifications Client":
-            self addMenu("Personal Modifications Client", "Personal Modifications "+Name);
-            self addToggleOpt("Toggle God Mode", ::ClientHandler, player.Godmode, 1, player);
-            self addToggleOpt("Toggle NoClip", ::ClientHandler, player.noclip, 2, player);
-            self addToggleOpt("Toggle Infinite Ammo", ::ClientHandler, player.UnlimAmmo, 3, player);
-            self addOpt("Max Player Score", ::ClientHandler, 4, player);
-            self addOpt("Give All Perks", ::ClientHandler, 7, player);
-            break;
-        case "Stat Manipulation Client":
-            self addMenu("Stat Manipulation Client", "Stat Manipulation "+name);
-            self addOpt("Complete All Challenges", ::CompleteChallenges, player);
-            self addOpt("Complete Contracts", ::CompleteActiveContracts, player);
-            self addSlider("Edit Rank",0, 0,999,1,::SetPlayerRank, undefined, undefined, player);
-            self addOpt("Unlock Directors Cut", ::UnlockDC, player);
-            self addOpt("Unlock All Talismans", ::UnlockTalismans, player);
-            self addOpt("Unlock Soul Keys", ::SoulKeyUnlock, player);
-            break;
-        case "Equip Weaps Client":
-            self addMenu("Equip Weaps Client", "Equipment and Weapons");
-                self addOpt("Weapon Selection", ::newMenu, "Weaps Client");
-             break;
-        case "Weaps Client":
-            self addMenu("Weaps Client", "Weapon Selection");
-                for(e=0;e<level.WeaponCategories.size;e++)
-                self addOpt(level.WeaponCategories[e], ::newMenu, level.WeaponCategories[e] + " Client");
-            break;
-        case "Assault Rifles Client":
-            self addMenu(level.WeaponCategories[0]+" Client", "Assault Rifles");
-                for(i=0;i<level.ARNames.size;i++){
-                    self addOpt(level.ARNames[i], ::GiveWeaponToPlayer, level.Assault[i], player);
-                }
-            break;        
-        case "Sub Machine Guns Client":
-            self addMenu(level.WeaponCategories[1]+" Client", "Sub Machine Guns");
-                for(i=0;i<level.SMGNames.size;i++){
-                    self addOpt(level.SMGNames[i], ::GiveWeaponToPlayer, level.SMG[i], player);
-                }
-            break;
-        case "Shotguns Client":
-            self addMenu(level.WeaponCategories[4]+" Client", "Shotguns");
-                for(i=0;i<level.ShotgunNames.size;i++){
-                    self addOpt(level.ShotgunNames[i], ::GiveWeaponToPlayer, level.Shotguns[i], player);
-                }
-            break;
-        case "Light Machine Guns Client":
-            self addMenu(level.WeaponCategories[2]+" Client", "Light Machine Guns");
-                for(i=0;i<level.LMGNames.size;i++){
-                    self addOpt(level.LMGNames[i], ::GiveWeaponToPlayer, level.LMG[i], player);
-                }
-            break;
-        case "Sniper Rifles Client":
-            self addMenu(level.WeaponCategories[3]+" Client", "Sniper Rifles");
-                for(i=0;i<level.SniperNames.size;i++){
-                    self addOpt( level.SniperNames[i], ::GiveWeaponToPlayer, level.Snipers[i],player); 
-                }
-            break;
-        case "Launchers Client":
-            self addMenu(level.WeaponCategories[6]+ " Client", "Launchers");
-                for(i=0;i<level.LauncherNames.size;i++){
-                    self addOpt( level.LauncherNames[i], ::GiveWeaponToPlayer, level.Launchers[i], player ); 
-                }
-            break;
-        case "Pistols Client":
-            self addMenu(level.WeaponCategories[5]+" Client", "Pistols");
-                for(i=0;i<level.PistolNames.size;i++){
-                    self addOpt( level.PistolNames[i], ::GiveWeaponToPlayer, level.Pistols[i], player );
-                    }
-            break;
-        case "Classic Weapons Client":
-            self addMenu(level.WeaponCategories[7]+"Client", "Classic Weapons");
-                for(i=0;i<level.ClassicNames.size;i++){
-                    self addOpt(level.ClassicNames[i], ::GiveWeaponToPlayer, level.Classics[i], player);
-                }
-            break;
-        case "Melee Weapons Client":
-            self addMenu(level.WeaponCategories[8]+" Client", "Melee Weapons");
-            for(i=0;i<level.MeleeNames.size;i++){
-                self addOpt(level.MeleeNames[i], ::GiveWeaponToPlayer, level.Melee[i], player);
-            }
-            break;
-        case "Specialist Weapons Client":
-            self addMenu(level.WeaponCategories[9] + "Client", "Specialist Weapons");
-                for(i=0;i<level.SpecialNames.size;i++){
-                    self addOpt(level.SpecialNames[i], ::GiveWeaponToPlayer, level.Specials[i], player);
-                }
-            break;
-        case "Map Specific Weapons Client":
-            self addMenu(level.WeaponCategories[10] +" Client", "Map Specific Weapons");
-                if(level.mapName == "cp_zmb"){
-                    for(i=0;i<level.SpacelandNames.size;i++){
-                        self addOpt(level.SpacelandNames[i], ::GiveWeaponToPlayer, level.SpacelandWeaps[i], player);
-                    }
-                }
-                else if(level.mapName == "cp_rave"){
-                    for(i=0;i<level.RaveNames.size;i++){
-                        self addOpt(level.RaveNames[i], ::GiveWeaponToPlayer, level.RaveWeaps[i], player);
-                    }
-                }
-                else if(level.mapName == "cp_disco"){
-                    for(i=0;i<level.ShaolinNames.size;i++){
-                        self addOpt(level.ShaolinNames[i], ::GiveWeaponToPlayer, level.ShaolinWeaps[i], player);
-                    }
-                }
-                else if(level.mapName == "cp_town"){
-                    for(i=0;i<level.AttackNames.size;i++){
-                        self addOpt(level.AttackNames[i], ::GiveWeaponToPlayer, level.AttackWeaps[i], player);
-                    }
-                }
-                else if(level.mapName == "cp_final")
-                {
-                    for(i=0;i<level.BeastNames.size;i++){
-                        self addOpt(level.BeastNames[i], ::GiveWeaponToPlayer, level.BeastWeaps[i], player);
-                    }
-                }
-            break;
-        case "Other Weapons Client":
-            self addMenu(level.WeaponCategories[11]+ " Client", "Other Weapons");
-                for(i=0;i<level.OtherNames.size;i++){
-                    self addOpt(level.OtherNames[i], ::GiveWeaponToPlayer, level.otherWeaps[i], player);
-                }
-            break;
-        case "Trolling Options":
-            self addMenu("Trolling Options", "Trolling Options");
-            self addOpt("Send Player To Jail", ::ClientHandler, 5, player);
-            self addOpt("Set Free From Jail", ::ClientHandler, 6, player);
-            self addOpt("Drop Player Weapon", ::dropweapon, player);
-            break;
-        case "PAccess":
-            self addMenu("PAccess", Name+" Verification");
-            for(e=0;e<level.Status.size-1;e++)
-                self addToggleOpt(GetAccessName(e), ::initializeSetup, player.access == e, e, player);
-            break;
-    }
-}
-
-GetTehMap()
-{
-    if(level.script == "cp_zmb") {return "Zombies in Spaceland";}
-    if(level.script == "cp_rave") {return "Rave in the Redwoods";}
-    if(level.script == "cp_disco") {return "Shaolin Shuffle";}
-    if(level.script == "cp_town") {return "Radioactive Thing";}
-    if(level.script == "cp_final") {return "Beast from Beyond";}
-}
-
-FastRestartGame()
-{
-    map_restart(0);
-}
-
-
 welcomeMessage(message, message2) {
     if (isDefined(self.welcomeMessage))
         while (1) {
@@ -1783,6 +169,81 @@ welcomeMessage(message, message2) {
     self.welcomeMessage = undefined;
 }
 
+iPrintLnAlt(String)
+{
+    if (!isDefined(self.printMsgs))
+        self.printMsgs = [];
+
+    // If already 5 messages, remove the oldest (last in array)
+    if (self.printMsgs.size >= 5)
+    {
+    oldest = self.printMsgs[self.printMsgs.size - 1];
+    if (isDefined(oldest))
+        oldest destroy();
+
+    // Rebuild array without the last element
+    newArr = [];
+    for (i = 0; i < self.printMsgs.size - 1; i++)
+        newArr[i] = self.printMsgs[i];
+
+    self.printMsgs = newArr;
+    }
+
+    // Create new text element
+    newMsg       = self createText("objective", 1, "left", "bottom", 0, -125, 3, 1, String, (1,1,1));
+    newMsg.alpha = 1;
+    newArr       = [];
+    newArr[0] = newMsg;
+    for (i = 0; i < self.printMsgs.size; i++)
+        newArr[i + 1] = self.printMsgs[i];
+
+    self.printMsgs = newArr;
+
+    // Reposition all messages (stack them upward)
+    for (i = 0; i < self.printMsgs.size; i++)
+    {
+        self.printMsgs[i].y = -125 - (i * 20);
+    }
+
+    // Fade out after 4 seconds
+    newMsg thread hudfade(0, 4);
+
+    // Remove it from the array after fading
+    newMsg thread removeAfterFade(self);
+}
+
+removeAfterFade(player)
+{
+    wait 4;
+    if (isDefined(self))
+    {
+        self destroy();
+        player.printMsgs = txtarray_remove(player.printMsgs, self);
+    }
+}
+
+txtarray_remove(arr, elem)
+{
+    newArr = [];
+    for (i = 0; i < arr.size; i++)
+        if (arr[i] != elem)
+            newArr[newArr.size] = arr[i];
+    return newArr;
+}
+
+GetTehMap()
+{
+    if(level.script == "cp_zmb") {return "Zombies in Spaceland";}
+    if(level.script == "cp_rave") {return "Rave in the Redwoods";}
+    if(level.script == "cp_disco") {return "Shaolin Shuffle";}
+    if(level.script == "cp_town") {return "Radioactive Thing";}
+    if(level.script == "cp_final") {return "Beast from Beyond";}
+}
+
+FastRestartGame()
+{
+    map_restart(0);
+}
 
 test()
 {
@@ -1796,13 +257,6 @@ CompleteGnS()
     scripts\cp\maps\cp_zmb\cp_zmb_ghost_wave::func_C127(6);//notifyactivationprogress
 }
 
-ActivateFAF(card, player)
-{
-    switch(card)
-    {
-        case "anywhere_but_here" : player thread lib_0D59::func_12FA2(undefined); break;
-    }
-}
 MaxBank()
 {
     level.var_2416 = 2147483647;//level.var_2416 = level.atm_amount_deposited
@@ -1857,17 +311,6 @@ EditRound(newRoundNum)
         wait 2;
         level.wave_num = newRoundNum;
         thread killAllZombies();
-    }
-}
-Godmode()
-{
-    self.godmode = !bool(self.godmode);
-    if(self.godmode)
-    {
-        self iPrintLnAlt("Godmode ^2Enabled");
-    }
-    else{
-        self iPrintLnAlt("Godmode ^1Disabled");
     }
 }
 killAllZombies()
@@ -1947,24 +390,8 @@ setLobbyTimer(time)
 }
 KeyGiving()
 {
-    self setplayerdata("cp","EoGPlayer", self getentitynumber(), "name","");
-    self setplayerdata("cp","EoGPlayer",self getentitynumber(),"kills",int(9999999999));
-    self setplayerdata("cp","EoGPlayer",self getentitynumber(),"score",int(9999999999));
-    self setplayerdata("cp","EoGPlayer",self getentitynumber(),"revives",int(999999999));
-    self setplayerdata("cp","EoGPlayer",self getentitynumber(),"repairs",int(99999999));
-    self setplayerdata("cp","EoGPlayer",self getentitynumber(),"downs",int(0));
-    self setplayerdata("cp","EoGPlayer",self getentitynumber(),"deaths",int(0));
-    self setplayerdata("cp","EoGPlayer",self getentitynumber(),"tickets",int(9999990000));
-    self setplayerdata("cp","EoGPlayer",self getentitynumber(),"currencyTotal",int(9999990000));
-    self setplayerdata("cp","EoGPlayer",self getentitynumber(),"currencySpent",int(9999990000));
-    self setplayerdata("cp","EoGPlayer",self getentitynumber(),"time",int(9999990000000));
-    self setplayerdata("cp","EoGPlayer",self getentitynumber(),"shots",int(999999));
-    self setplayerdata("cp","EoGPlayer",self getentitynumber(),"headShots",int(999999000000));
-    self setplayerdata("cp","EoGPlayer",self getentitynumber(),"hits",int(999999));
-    self setplayerdata("cp","EoGPlayer",self getentitynumber(),"waveNum",int(999999));
-    self setplayerdata("cp","EoGPlayer",self getentitynumber(),"timeplayed",int(999999));
-    self iPrintLnBold("YOU SHOULD HAVE KEYS");
-    self thread EndGameHost();
+    self scripts\cp\_persistence::func_830F(500);
+    self iPrintLnAlt("You should have 500 Keys");
 }
 
 NoMovingWheel()
@@ -1992,27 +419,6 @@ LoopBox()
         level.var_13D01 = 0;//set box spins at 0, since the check runs if > than 4 spins took place.
         wait 1;
     }
-}
-no_clip() {
-    self.noclip = !bool(self.noclip);
-    if(self.noclip) {
-        self iPrintLnAlt("No Clip [^2ON^7]");
-        thread UpdateSessionState("spectator");
-    } else {
-    self iPrintLnAlt("No Clip [^1OFF^7]");
-    thread UpdateSessionState("playing");
-    }
-}
-UpdateSessionState(param_00,param_01)
-{
-    self.sessionstate = param_00;
-    if(!isdefined(param_01))
-    {
-        param_01 = "";
-    }
-
-    self.var_2C7 = param_01;
-    self setclientomnvar("ui_session_state",param_00);
 }
 
 freezeZombies()
@@ -2151,17 +557,6 @@ PlayAudioToClients(audioFile)
             level thread force_song((649,683,254),audioFile);
         }
     }
-}
-
-modelSpawner( origin, model, angles, time)
-{
-    if(isDefined(time))
-        wait time;
-     
-    obj = spawn("script_model",origin);
-    obj setmodel(model);
-    obj.angles = angles;
-    return obj;
 }
 
 force_song(param_00,param_01,param_02,param_03,param_04,param_05,param_06)
@@ -2574,12 +969,12 @@ GiveWeaponToPlayer(weapon, player) {
         papText  = undefined;
         papCamo  = undefined;
         papLevel = undefined;
-        if(self.give_packed_weapon == 1){
+        if(isDefined(self.give_packed_weapon) && self.give_packed_weapon == 1){
             papText = "pap1";
             if(level.script == "cp_zmb"){ papCamo ="+camo1";}else if(level.script == "cp_rave") { papCamo = "+camo204";} else if(level.script == "cp_disco"){ papCamo = "+camo211";} else if(level.script == "cp_town"){ papCamo = "+camo92";} else if(level.script == "cp_final"){ papCamo = "+camo32";}
             papLevel = "1";
         }
-        else if(self.give_double_packed_weapon == 1)
+        else if(isDefined(self.give_double_packed_weapon) && self.give_double_packed_weapon == 1)
         {
             papText = "pap2";
             if(level.script == "cp_zmb"){ papCamo ="+camo4";}else if(level.script == "cp_rave") { papCamo = "+camo205";} else if(level.script == "cp_disco"){ papCamo = "+camo212";} else if(level.script == "cp_town"){ papCamo = "+camo93";} else if(level.script == "cp_final"){ papCamo = "+camo34";}
@@ -2690,51 +1085,6 @@ GiveWeaponToPlayer(weapon, player) {
     }
 }
 
-ToggleAmmo() {
-    self.UnlimAmmo = !bool(self.UnlimAmmo);
-    if(self.UnlimAmmo) {
-        self iPrintLnAlt("Infinite Ammo [^2ON^7]");
-        enable_infinite_ammo(self.UnlimAmmo);
-    } else {
-        self iPrintLnAlt("Infinite Ammo [^1OFF^7]");
-        enable_infinite_ammo(self.UnlimAmmo);
-    }
-    while (self.UnlimAmmo)
-    {
-        self setWeaponAmmoClip(self getCurrentWeapon(), 999);
-        self setWeaponAmmoClip(self getCurrentWeapon(), 999, "left");
-        self setWeaponAmmoClip(self getCurrentWeapon(), 999, "right");
-        self scripts\cp\powers\coop_powers::func_D71A(2, "primary", 2);
-        self scripts\cp\powers\coop_powers::func_D71A(2, "secondary", 2);
-        wait .2;
-    }
-}
-enable_infinite_ammo(param_00)
-{
-    if(param_00)
-    {
-        self.infiniteammocounter++;
-        self setclientomnvar("zm_ui_unlimited_ammo",1);
-        return;
-    }
-
-    if(self.infiniteammocounter > 0)
-    {
-        self.infiniteammocounter--;
-    }
-
-    if(!self.infiniteammocounter)
-    {
-        self setclientomnvar("zm_ui_unlimited_ammo",0);
-    }
-}
-
-//Function Number: 150
-isinfiniteammoenabled()
-{
-    return self.infiniteammocounter >= 1;
-}
-
     
 CompleteChallenges(player)
 {
@@ -2831,59 +1181,8 @@ UnlockDC(player)
     player setplayerdata("cp","dc", 1);
     self iPrintLnAlt("^2Director's cut given to "+player.name);
 }
- 
-AddScore(amount, player)
-{
-    player setplayerdata("cp","alienSession", "currency", player getplayerdata("cp","alienSession","currency") + int(amount));
-    player iPrintLnAlt("Score Set To: "+player getplayerdata("cp","alienSession","currency"));
-}
-TakeScore(amount, player)
-{
-    player setplayerdata("cp","alienSession", "currency", player getplayerdata("cp","alienSession","currency") - int(amount) );
-    player iPrintLnAlt("Score Set To: "+player getplayerdata("cp","alienSession","currency"));
-}
-MaxScore( player )
-{
-    player setplayerdata("cp","alienSession", "currency", self.var_B48A );
-    player iPrintLnAlt("Score Set To: "+player getplayerdata("cp","alienSession","currency"));
-}
 
-ClientHandler(func, player)
-{
-    switch(func)
-    {
-        case 1 : player thread Godmode(); break;
-        case 2 : player thread no_clip(); break;
-        case 3 : player thread ToggleAmmo(); break;
-        case 4 : player thread MaxScore(player); break;
-        case 5 : player setOrigin(level.jailPos); player iPrintLnAlt("You have been sent to ^1JAIL"); break;
-        case 6 : player setOrigin(level.freePos); player iPrintLnAlt("You have been set free from ^2Jail"); break;
-        case 7 : player thread AllPerks(); break;
-        case 8 : player thread ToggleKillAura(); break;
-    }
-        wait .05;
-}
 
-AllClientHandler(state)
-{
-    foreach(client in level.players)
-    {
-        if(client isHost()){}//don't activate for the host
-        else
-        switch(state)
-        {
-            case 1 : client thread Godmode(); break;
-            case 2 : client thread no_clip(); break;
-            case 3 : client thread ToggleAmmo(); break;
-            case 4 : client thread MaxScore(client); break;
-            case 5 : client thread AllPerks(); break;
-            case 6 : client thread ToggleKillAura(); break;
-            case 7 : client setOrigin(level.jailPos); client iPrintLnAlt("^1You have been sent to JAIL"); break;
-            case 8 : client setOrigin(level.freePos); client iPrintLnAlt("^2You have been set free from JAIL"); break;
-        }
-        wait .05;
-    }
-}
 PrintCoords()
 {
     self iPrintLnAlt("Current Coords: "+self.origin);
@@ -3084,12 +1383,6 @@ RainbowOutlines()
         self set_outline_color(5);
         wait 1;
     }
-}
-
-AllPerks()
-{
-    self thread scripts\cp\maps\cp_zmb\cp_zmb_ghost_wave::func_5FB7(self);
-    self iPrintLnAlt("^2All perks have been given");
 }
 
 givePillagedLoot( equipment )
@@ -3342,55 +1635,8 @@ ToggleForceHost()
     }
 }
 
-SpeedToggle()//per player speed
-{
-    self.speedToggle = !bool(self.speedToggle);
-    if(self.speedToggle){
-        self iPrintLnAlt("Speed Toggle Enabled");
-        self thread MonitorSpeed();//have to do this cause the game resets movespeedscale on frames
-    }
-    else{
-        self IprintLnAlt("Speed Toggle ^1Disabled");
-        self setmovespeedscale(1);
-        self notify("end_speed");
-    }
-}
-
-EditSpeed(speed)
-{
-    if(!self.speedToggle){ self iPrintLnAlt("Error, Speed Toggle Not Enabled"); return;}
-    self.speedValue = speed;
-    self iPrintLnAlt("Player Speed Set to "+speed);
-}
-MonitorSpeed()
-{
-    self endon("disconnect");
-    self endon("end_speed");
-    if(!isDefined(self.speedValue)) self.speedValue = 1;
-    for(;;)
-    {
-        self setmovespeedscale(self.speedValue);//have to loop since speed resets per frames
-        wait 1;
-    }
-}
-
 dropweapon(player)
 {
     player method_80B8(player getcurrentweapon());//method_80B8 = DropItem
     player iPrintLnAlt("^2Oops, you ^1Dropped ^2Something");
-}
-callback_player_damage_stub( inflictor, attacker, damage, flag, death_cause, weapon, point, direction, hit_location, time_offset ) {
-    if( bool( self.godmode ) )
-        return;
-    
-    [[ level.callback_player_damage_stub ]]( inflictor, attacker, damage, flag, death_cause, weapon, point, direction, hit_location, time_offset );
-}
-
-callback_player_killed_stub( inflictor, attacker, damage, death_cause, weapon, direction, hit_location, time_offset, death_duration ) {
-    [[ level.callback_player_killed_stub ]]( inflictor, attacker, damage, death_cause, weapon, direction, hit_location, time_offset, death_duration );
-}
-
-callback_player_laststand_stub( inflictor, attacker, damage, death_cause, weapon, direction, hit_location, time_offset, death_duration ) {
-    self notify( "player_downed" );
-    [[ level.callback_player_laststand_stub ]]( inflictor, attacker, damage, death_cause, weapon, direction, hit_location, time_offset, death_duration );
 }
