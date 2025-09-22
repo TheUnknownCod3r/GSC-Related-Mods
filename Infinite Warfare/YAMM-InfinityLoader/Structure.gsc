@@ -38,6 +38,7 @@ menuOptions()
             self addToggleOpt("Toggle God Mode", ::Godmode, self.godmode);
             self addToggleOpt("Toggle No Clip", ::no_clip, self.noclip);
             self addToggleOpt("Toggle Infinite Ammo", ::ToggleAmmo, self.UnlimAmmo);
+            self addToggleOpt("Toggle Third Person", ::ThirdPerson, self.thirdPerson);
             self addOpt("Score Menu", ::newMenu, "Score Menu");
             self addOpt("Random Teleport", ::ActivateFAF, "anywhere_but_here", self);
             self addOpt("Give All Perks", ::AllPerks, self);
@@ -91,6 +92,7 @@ menuOptions()
             self addMenu("Weapon Manipulation", "Weapon Manipulation");
                 self addOpt("Weapon Selection", ::newMenu, "Weapon Selection");
                 self addOpt("Pillaged Loot", ::newMenu, "Pillaged Loot");
+                self addOpt("Fill Fate And Fortune", ::FillFAF);
             break;
         case "Pillaged Loot":
             self addMenu("Pillaged Loot", "Pillaged Loot");
@@ -232,6 +234,7 @@ menuOptions()
         case "Fun Menu":
             self addMenu("Fun Menu", "Fun Modifications");
                 self addToggleOpt("Toggle Kill Aura", ::ToggleKillAura, self.killAura, self);
+                self addToggleOpt("Toggle Crosshair Loop", ::TeleToCrosshairLoop, self.crosshairloop);
                 self addOpt("Sky Trip", ::skyTrip);
             break;
         case "Zombies in Spaceland":
@@ -242,7 +245,6 @@ menuOptions()
                 self addOpt("Trigger MW2 Song", ::PlayAudioToClients, "mus_pa_mw2_80s_cover");
                 self addOpt("Activate Ghosts N Skulls", ::CompleteGnS);
                 self addOpt("Play Knight Rider", ::PlayAudioToClients, "mus_pa_sp_knightrider");
-                self addOpt("Play Scattered Lies", ::PlayAudioToClients, "mus_pa_final_hidden_track");
             break;
         case "SLQuests":
             self addMenu("SLQuests", "Quest Options");
@@ -259,7 +261,6 @@ menuOptions()
         case "Shaolin Shuffle":
             self addMenu("Shaolin Shuffle", "Shaolin Shuffle");
                 self addOpt("Play Beat of the Drum", ::PlayAudioToClients, "mus_pa_disco_hidden_track");
-                self addOpt("Complete Kung Fu", ::CompleteAllKungFu, self);
                 self addOpt("Activate Ghosts N Skulls", ::CompleteGnS);
             break;
 
@@ -304,21 +305,13 @@ menuOptions()
         case "Host Debug":
             self addMenu("Host Debug", "Host Debug Settings");
             self addOpt("Fast Restart", ::FastRestartGame);
-            self addOpt("Merry Go Round Options", ::newMenu, "MerryOpt");
+            self addOpt("Print Key Count", ::GetKeyCount);
             self addOpt("End The Game", ::EndGameHost);
             self addSlider("Send Client Message",1,1,5,1,::ClientMessages);
             self addOpt("Print Coords", ::PrintCoords);
             self addSlider("Set XP Scale",getdvarint("online_zombies_xpscale"),1,99,1,::SetXPScale);
             self addSlider("Set Lobby Timer",level.TimerTime,1,99,1,::setLobbyTimer);
             self addOpt("Start Timed Lobby", ::startLobbyTimer);
-            break;
-        case "MerryOpt":
-            self addMenu("MerryOpt", "Merry Go Round Options");
-            self addOpt("Spawn Merry Go Round", ::spawn_merry, "Merry Go Round");
-            self addOpt("Increase Speed", ::merryrotate, +1);
-            self addOpt("Decrease Speed", ::merryrotate, -1);
-            self addOpt("Nuke The Merry Go Round", ::ride_destroy2, "merrynuke");
-            self addOpt("Delete The Merry Go Round", ::ride_destroy2, "merrydestroy");
             break;
 
         default:

@@ -21,6 +21,22 @@ Godmode()
     }
 }
 
+ThirdPerson()
+{
+    self.thirdPerson = isDefined(self.thirdPerson) ? undefined : true;
+    if(self.thirdPerson)
+    {
+        setDvar("camera_thirdPerson", 1);
+        setThirdPersonDOF(1);
+        self iPrintLnAlt("Third Person Mode ^2ON");
+    }
+    else
+    {
+        setDvar("camera_thirdPerson", 0);
+        setThirdPersonDOF(0);
+        self iPrintLnAlt("Third Person ^1Off");
+    }
+}
 no_clip() {
     self.noclip = !bool(self.noclip);
     if(self.noclip) {

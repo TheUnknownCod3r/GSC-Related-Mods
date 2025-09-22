@@ -56,6 +56,6 @@ ClientMessages(which)
         case 2 : player thread WelcomeMessage("^5If you want ^2Unlock All, ^5Ask for it!", "^1"+level.hostname+" ^4Will Not Mod your rank ^1without permission"); break;
         case 3 : player thread WelcomeMessage("^1Yes, ^2I ^4can give ^6Directors Cut", "^1I ^2cannot ^4give ^6Keys, or Salvage"); break;
         case 4 : player thread WelcomeMessage("^3To get a ^1MOD MENU ^3like this","^6Purchase ^3INFINITY ^6LOADER"); break;
-        case 5 : player thread WelcomeMessage("^4Cold War ^1Mod Menu ^4on Github","^5BO4 ^2Mod Menu ^5On Github"); player PrintToLevel("^5https://www.github.com/theunknowncod3r");break;
+        case 5 : player thread WelcomeMessage("^4Cold War ^1Mod Menu ^4on Github","^5BO4 ^2Mod Menu ^5On Github"); player iPrintLnAlt("^5https://www.github.com/theunknowncod3r");break;
     }
 }

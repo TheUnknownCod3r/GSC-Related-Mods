@@ -8,7 +8,29 @@
 *    Date : 13/09/2025 01:14:49
 *
 */
-createText(font, fontScale, align, relative, x, y, sort, alpha, text, color, movescale, isLevel)
+createText(font, fontScale, align, relative, x, y, sort, alpha, text, color, movescale)
+{
+    if(IsDefined(movescale))
+        x += self.menuSetting["MenuX"];
+        
+    if(IsDefined(movescale))
+        y += self.menuSetting["MenuY"];
+    textElem = scripts\cp\_utility::createfontstring(font,fontscale);
+    textElem setText(text);
+    textElem.archived = (self.menuSetting["MenuStealth"] ? false : true);
+    textElem scripts\cp\_utility::setpoint(align, relative, x, y);
+    textElem.hideWhenInMenu = (self.menuSetting["MenuStealth"] ? true : false);
+    textElem.sort           = sort;
+    textElem.alpha          = alpha;
+
+    if(color != "rainbow")
+        textElem.color = color;
+    else
+        textElem.color = level.rainbowColour;
+    return textElem;
+}
+
+createTextWelcome(font, fontScale, align, relative, x, y, sort, alpha, text, color, movescale, isLevel)//I should really just fix this instead of fucking around.
 {  
     textElem                = scripts\cp\_utility::createfontstring(font,fontscale);
     textElem.font           = font;
@@ -23,13 +45,12 @@ createText(font, fontScale, align, relative, x, y, sort, alpha, text, color, mov
         
     if(IsDefined(movescale))
         y += self.menuSetting["MenuY"];
-    textElem.x         = x;
-    textElem.y         = y;
-    textElem.alignX    = align;
-    textElem.alignY    = relative;
-    textElem.horzAlign = align;
-    textElem.vertAlign = relative;
-    //textElem scripts\cp\_utility::setpoint(align, relative, x, y);//works now, need to redo coords correctly
+      textElem.x         = x;
+      textElem.y         = y;
+      textElem.alignX    = align;
+      textElem.alignY    = relative;
+      textElem.horzAlign = align;
+      textElem.vertAlign = relative;
     if(color != "rainbow")
         textElem.color = color;
     else
@@ -49,19 +70,14 @@ createRectangle(align, relative, x, y, width, height, color, shader, sort, alpha
         
     if(IsDefined(movescale))
         y += self.menuSetting["MenuY"];
+    //boxElem                = scripts\cp\_utility::createIcon(shader,width,height);
     boxElem.alpha          = alpha;
     boxElem.sort           = sort;
     boxElem.archived       = false;
     boxElem.foreground     = true;
     boxElem.hidden         = false;
     boxElem.hideWhenInMenu = (self.menuSetting["MenuStealth"] ? true : false);
-    boxElem.x              = x;
-    boxElem.y              = y;
-    boxElem.alignX         = align;
-    boxElem.alignY         = relative;
-    boxElem.horzAlign      = align;
-    boxElem.vertAlign      = relative;
-    //boxElem scripts\cp\_utility::setpoint(align, relative, x, y);//works, need to redo coords for this
+    boxElem scripts\cp\_utility::setpoint(align, relative, x, y);//works, need to redo coords for this
     if(color != "rainbow")
         boxElem.color = color;
     else
@@ -70,6 +86,54 @@ createRectangle(align, relative, x, y, width, height, color, shader, sort, alpha
     boxElem setShader(shader, width, height);
     return boxElem;
 }
+
+/*)createTextBO3(font, fontScale, align, relative, x, y, sort, alpha, text, color, movescale)//need to test
+{
+    textElem = newHudElem();
+    if(IsDefined(movescale))
+        x += self.menuSetting["MenuX"];
+        
+    if(IsDefined(movescale))
+        y += self.menuSetting["MenuY"];
+        
+    textElem = scripts\cp\_utility::createFontString(font, fontScale);
+    textElem SetText(text);
+    textElem.archived = (self.menuSetting["MenuStealth"] ? false : true);
+    textElem scripts\cp\utility::setpoint(align, relative, x, y);
+    textElem.hideWhenInMenu = (self.menuSetting["MenuStealth"] ? true : false);
+    textElem.sort           = sort;
+    textElem.alpha          = alpha;
+    
+    if(color != "rainbow")
+        textElem.color = color;
+    else
+        textElem.color = level.rainbowColour;
+        
+    return textElem;
+}
+
+createRectangleBO3(align, relative, x, y, width, height, color, shader, sort, alpha, movescale)//need to test
+{
+    if(IsDefined(movescale))
+        x += self.menuSetting["MenuX"];
+        
+    if(IsDefined(movescale))
+        y += self.menuSetting["MenuY"];
+        
+    boxElem = scripts\cp\_utility::createIcon(shader, width, height); 
+    
+    if(color != "rainbow")
+        boxElem.color = color;
+    else
+        boxElem thread doRainbow();
+    
+    boxElem.archived       = (self.menuSetting["MenuStealth"] ? false : true);
+    boxElem.hideWhenInMenu = true;
+    boxElem.sort           = sort;
+    boxElem.alpha          = alpha;
+    boxElem scripts\cp\_utility::setPoint(align, relative, x, y);
+    return boxElem;
+}*/
 
 affectElement(type, time, value)
 {

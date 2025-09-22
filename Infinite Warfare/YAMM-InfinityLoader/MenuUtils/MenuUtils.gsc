@@ -71,7 +71,9 @@ menuMonitor()
                             Func = self.sliders;
                         }
                     }
-
+                    if(IsDefined(Menu.autofunc))
+                        self thread doOption(Menu.func, Func[self getCurrentMenu() + "_" + self getCursor()], Menu.p1, Menu.p2, Menu.p3);
+                    
                     if(IsDefined(Menu.toggle))
                         self UpdateCurrentMenu();
                   
